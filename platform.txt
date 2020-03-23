@@ -5,8 +5,8 @@
 # For more info:
 # https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5-3rd-party-Hardware-specification
 # version -1.0.0 off Arduino, c++17 standard selected
-name=Peters Arduino AVR Boards
-version=0.8.2
+name=Cpp17 Arduino AVR Boards
+version=0.0.2
 
 # AVR compile variables
 # ---------------------
@@ -15,14 +15,19 @@ compiler.warning_flags=-w
 compiler.warning_flags.none=-w
 compiler.warning_flags.default=
 compiler.warning_flags.more=-Wall
-compiler.warning_flags.all=-Wall -Wextra
+compiler.warning_flags.all=-Wall -Wextra -pedantic 
 
 # Default "compiler.path" is correct, change only if you want to override the initial value
+# attempt to make it use C++ for .c files
 compiler.path={runtime.tools.avr-gcc.path}/bin/
-compiler.c.cmd=avr-gcc
-compiler.c.flags=-c -g -Os {compiler.warning_flags} -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects
-compiler.c.elf.flags={compiler.warning_flags} -Os -g -flto -fuse-linker-plugin -Wl,--gc-sections
-compiler.c.elf.cmd=avr-gcc
+compiler.c.cmd=avr-g++
+compiler.c.flags=-c -g -Os {compiler.warning_flags} -std=c++17 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -x c++
+compiler.c.elf.flags={compiler.warning_flags} -Os -g -flto -fuse-linker-plugin -Wl,--gc-sections 
+compiler.c.elf.cmd=avr-g++
+#compiler.c.cmd=avr-gcc
+#compiler.c.flags=-c -g -Os {compiler.warning_flags} -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects
+#compiler.c.elf.flags={compiler.warning_flags} -Os -g -flto -fuse-linker-plugin -Wl,--gc-sections
+#compiler.c.elf.cmd=avr-gcc
 compiler.S.flags=-c -g -x assembler-with-cpp -flto -MMD
 compiler.cpp.cmd=avr-g++
 compiler.cpp.flags=-c -g -Os {compiler.warning_flags} -std=c++17 -fpermissive -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -Wno-error=narrowing -MMD -flto

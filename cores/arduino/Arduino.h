@@ -32,12 +32,169 @@
 #include "binary.h"
 
 #ifdef __cplusplus
+constexpr auto AN{0x1};
+constexpr auto AUS{0x0};
+constexpr auto PETERSOUTPUT{0x1};
 extern "C"{
-	constexpr auto AN{0x1};
-	constexpr auto AUS{0x0};
-	constexpr auto PETERSOUTPUT{0x1};
+void yield(void);
+}
+constexpr auto HIGH = 0x1;
+constexpr auto LOW = 0x0;
+
+constexpr auto INPUT = 0x0;
+constexpr auto OUTPUT = 0x1;
+constexpr auto INPUT_PULLUP = 0x2;
+
+constexpr auto PI = 3.1415926535897932384626433832795;
+constexpr auto HALF_PI = 1.5707963267948966192313216916398;
+constexpr auto TWO_PI = 6.283185307179586476925286766559;
+constexpr auto DEG_TO_RAD = 0.017453292519943295769236907684886;
+constexpr auto RAD_TO_DEG = 57.295779513082320876798154814105;
+constexpr auto EULER = 2.718281828459045235360287471352;
+
+constexpr auto SERIAL = 0x0;
+constexpr auto DISPLAY = 0x1;
+
+#define LSBFIRST 0
+#define MSBFIRST 1
+
+constexpr auto CHANGE = 1;
+constexpr auto FALLING = 2;
+constexpr auto RISING = 3;
+
+#if defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__)
+  constexpr auto DEFAULT = 0;
+  constexpr auto EXTERNAL = 1;
+  constexpr auto INTERNAL1V1 = 2;
+  constexpr auto INTERNAL = INTERNAL1V1;
+#elif defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+  constexpr auto DEFAULT = 0;
+  constexpr auto EXTERNAL = 4;
+  constexpr auto INTERNAL1V1 = 8;
+  constexpr auto INTERNAL = INTERNAL1V1;
+  constexpr auto INTERNAL2V56 = 9;
+  constexpr auto INTERNAL2V56_EXTCAP = 13;
+#else
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
+constexpr auto INTERNAL1V1 = 2;
+constexpr auto INTERNAL2V56 = 3;
+#else
+constexpr auto INTERNAL = 3;
+#endif
+constexpr auto DEFAULT = 1;
+constexpr auto EXTERNAL = 0;
 #endif
 
+// undefine stdlib's abs if encountered
+#ifdef abs
+#undef abs
+#endif
+
+// might be replaced by standard library features later
+template<typename T1, typename T2> 
+inline constexpr auto min(T1&& a, T2&& b) //-> decltype(((a) < (b) ? (a) : (b)))
+{
+    return (((a) < (b) ? (a) : (b)));
+}
+template<typename T1, typename T2> 
+inline constexpr auto max(T1&& a, T2&& b) //-> decltype(((a) > (b) ? (a) : (b)))
+{
+    return (((a) > (b) ? (a) : (b)));
+}
+#define abs(x) ((x)>0?(x):-(x))
+template<typename T1, typename T2, typename T3> 
+inline constexpr auto constrain(T1&& amt, T2&& low, T3&& high) //-> decltype(((amt) < (low) ? (low) : ((amt) > (high) ? (high) : (amt))))
+{
+    return (((amt) < (low) ? (low) : ((amt) > (high) ? (high) : (amt))));
+}
+template<typename T1> 
+inline constexpr auto round(T1&& x) //-> decltype(((x) >= 0 ? (long )(((x) + 0.5)) : (long )(((x) - 0.5))))
+{
+    return (((x) >= 0 ? (long )(((x) + 0.5)) : (long )(((x) - 0.5))));
+}
+template<typename T1> 
+inline constexpr auto radians(T1&& deg) //-> decltype(((deg) * DEG_TO_RAD))
+{
+    return (((deg) * DEG_TO_RAD));
+}
+template<typename T1> 
+inline constexpr auto degrees(T1&& rad) //-> decltype(((rad) * RAD_TO_DEG))
+{
+    return (((rad) * RAD_TO_DEG));
+}
+template<typename T1> 
+inline constexpr auto sq(T1&& x) //-> decltype(((x) * (x)))
+{
+    return (((x) * (x)));
+}
+
+#define interrupts() sei()
+#define noInterrupts() cli()
+
+inline constexpr auto clockCyclesPerMicrosecond() //-> decltype((F_CPU / 1000000L))
+{
+    return ((F_CPU / 1000000L));
+}
+template<typename T1> 
+inline constexpr auto clockCyclesToMicroseconds(T1&& a) //-> decltype(((a) / clockCyclesPerMicrosecond()))
+{
+    return (((a) / clockCyclesPerMicrosecond()));
+}
+template<typename T1> 
+inline constexpr auto microsecondsToClockCycles(T1&& a) //-> decltype(((a) * clockCyclesPerMicrosecond()))
+{
+    return (((a) * clockCyclesPerMicrosecond()));
+}
+
+template<typename T1> 
+inline constexpr uint8_t lowByte(T1&& w)// -> decltype(((uint8_t)((w) & 0xff)))
+{
+    return w & 0xff;
+}
+template<typename T1> 
+inline constexpr uint8_t highByte(T1&& w) //-> decltype(((uint8_t)((w) >> 8)))
+{
+    return w >> 8;
+}
+
+template<typename T1, typename T2> 
+inline constexpr auto bitRead(T1&& value, T2&& bit) //-> decltype((((value) >> (bit)) & 0x01))
+{
+    return ((((value) >> (bit)) & 0x01));
+}
+template<typename T1, typename T2> 
+inline constexpr auto bitSet(T1& value, T2&& bit)
+{
+    return (((value) |= (1UL << (bit))));
+}
+template<typename T1, typename T2> 
+inline constexpr auto bitClear(T1& value, T2&& bit)
+{
+    return (((value) &= ~(1UL << (bit))));
+}
+template<typename T1, typename T2> 
+inline constexpr auto bitToggle(T1& value, T2&& bit)
+{
+    return (((value) ^= (1UL << (bit))));
+}
+template<typename T1, typename T2, typename T3> 
+inline constexpr auto bitWrite(T1& value, T2&& bit, T3&& bitvalue)
+{
+    return (((bitvalue) ? bitSet(value, bit) : bitClear(value, bit)));
+}
+
+using word = unsigned int;
+
+template<typename T1> 
+inline constexpr auto bit(T1&& b)
+{
+    return ((1UL << (b)));
+}
+
+using boolean = bool;
+using byte = uint8_t;
+
+#else
 void yield(void);
 
 #define HIGH 0x1
@@ -116,18 +273,24 @@ void yield(void);
 #define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
 #define bitToggle(value, bit) ((value) ^= (1UL << (bit)))
 #define bitWrite(value, bit, bitvalue) ((bitvalue) ? bitSet(value, bit) : bitClear(value, bit))
-
-// avr-libc defines _NOP() since 1.6.2
-#ifndef _NOP
-#define _NOP() do { __asm__ volatile ("nop"); } while (0)
-#endif
-
 typedef unsigned int word;
 
 #define bit(b) (1UL << (b))
 
 typedef bool boolean;
 typedef uint8_t byte;
+
+// triage C/C++ part
+#endif
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+// avr-libc defines _NOP() since 1.6.2
+#ifndef _NOP
+#define _NOP() do { __asm__ volatile ("nop"); } while (0)
+#endif
+
 
 void init(void);
 void initVariant(void);
