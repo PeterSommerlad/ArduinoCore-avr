@@ -4,6 +4,50 @@ menu.cpu=Processor
 
 ##############################################################
 
+microp.name=Peters Micro
+
+microp.vid.0=0x2341
+microp.pid.0=0x0037
+microp.vid.1=0x2341
+microp.pid.1=0x8037
+microp.vid.2=0x2A03
+microp.pid.2=0x0037
+microp.vid.3=0x2A03
+microp.pid.3=0x8037
+microp.vid.4=0x2341
+microp.pid.4=0x0237
+microp.vid.5=0x2341
+microp.pid.5=0x8237
+
+microp.upload.tool=avrdude
+microp.upload.protocol=avr109
+microp.upload.maximum_size=28672
+microp.upload.maximum_data_size=2560
+microp.upload.speed=57600
+microp.upload.disable_flushing=true
+microp.upload.use_1200bps_touch=true
+microp.upload.wait_for_upload_port=true
+
+microp.bootloader.tool=avrdude
+microp.bootloader.low_fuses=0xff
+microp.bootloader.high_fuses=0xd8
+microp.bootloader.extended_fuses=0xcb
+microp.bootloader.file=caterina/Caterina-Micro.hex
+microp.bootloader.unlock_bits=0x3F
+microp.bootloader.lock_bits=0x2F
+
+microp.build.mcu=atmega32u4
+microp.build.f_cpu=16000000L
+microp.build.vid=0x2341
+microp.build.pid=0x8037
+microp.build.usb_product="Peters microp"
+microp.build.board=AVR_MICRO
+microp.build.core=arduino
+microp.build.variant=microp
+microp.build.extra_flags={build.usb_flags}
+
+##############################################################
+
 yun.name=Arduino Yún
 yun.upload.via_ssh=true
 

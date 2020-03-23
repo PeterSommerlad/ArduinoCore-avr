@@ -33,6 +33,9 @@
 
 #ifdef __cplusplus
 extern "C"{
+	constexpr auto AN{0x1};
+	constexpr auto AUS{0x0};
+	constexpr auto PETERSOUTPUT{0x1};
 #endif
 
 void yield(void);
