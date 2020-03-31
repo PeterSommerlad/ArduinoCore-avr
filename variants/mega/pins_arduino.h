@@ -35,16 +35,16 @@
 #define PIN_SPI_MISO  (50)
 #define PIN_SPI_SCK   (52)
 
-static const uint8_t SS   = PIN_SPI_SS;
-static const uint8_t MOSI = PIN_SPI_MOSI;
-static const uint8_t MISO = PIN_SPI_MISO;
-static const uint8_t SCK  = PIN_SPI_SCK;
+constexpr inline uint8_t SS   = PIN_SPI_SS;
+constexpr inline uint8_t MOSI = PIN_SPI_MOSI;
+constexpr inline uint8_t MISO = PIN_SPI_MISO;
+constexpr inline uint8_t SCK  = PIN_SPI_SCK;
 
 #define PIN_WIRE_SDA        (20)
 #define PIN_WIRE_SCL        (21)
 
-static const uint8_t SDA = PIN_WIRE_SDA;
-static const uint8_t SCL = PIN_WIRE_SCL;
+constexpr inline uint8_t SDA = PIN_WIRE_SDA;
+constexpr inline uint8_t SCL = PIN_WIRE_SCL;
 
 #define LED_BUILTIN 13
 
@@ -65,22 +65,22 @@ static const uint8_t SCL = PIN_WIRE_SCL;
 #define PIN_A14  (68)
 #define PIN_A15  (69)
 
-static const uint8_t A0 = PIN_A0;
-static const uint8_t A1 = PIN_A1;
-static const uint8_t A2 = PIN_A2;
-static const uint8_t A3 = PIN_A3;
-static const uint8_t A4 = PIN_A4;
-static const uint8_t A5 = PIN_A5;
-static const uint8_t A6 = PIN_A6;
-static const uint8_t A7 = PIN_A7;
-static const uint8_t A8 = PIN_A8;
-static const uint8_t A9 = PIN_A9;
-static const uint8_t A10 = PIN_A10;
-static const uint8_t A11 = PIN_A11;
-static const uint8_t A12 = PIN_A12;
-static const uint8_t A13 = PIN_A13;
-static const uint8_t A14 = PIN_A14;
-static const uint8_t A15 = PIN_A15;
+constexpr inline uint8_t A0 = PIN_A0;
+constexpr inline uint8_t A1 = PIN_A1;
+constexpr inline uint8_t A2 = PIN_A2;
+constexpr inline uint8_t A3 = PIN_A3;
+constexpr inline uint8_t A4 = PIN_A4;
+constexpr inline uint8_t A5 = PIN_A5;
+constexpr inline uint8_t A6 = PIN_A6;
+constexpr inline uint8_t A7 = PIN_A7;
+constexpr inline uint8_t A8 = PIN_A8;
+constexpr inline uint8_t A9 = PIN_A9;
+constexpr inline uint8_t A10 = PIN_A10;
+constexpr inline uint8_t A11 = PIN_A11;
+constexpr inline uint8_t A12 = PIN_A12;
+constexpr inline uint8_t A13 = PIN_A13;
+constexpr inline uint8_t A14 = PIN_A14;
+constexpr inline uint8_t A15 = PIN_A15;
 
 // A majority of the pins are NOT PCINTs, SO BE WARNED (i.e. you cannot use them as receive pins)
 // Only pins available for RECEIVE (TRANSMIT can be on any pin):
@@ -109,6 +109,7 @@ static const uint8_t A15 = PIN_A15;
 
 #define digitalPinToInterrupt(p) ((p) == 2 ? 0 : ((p) == 3 ? 1 : ((p) >= 18 && (p) <= 21 ? 23 - (p) : NOT_AN_INTERRUPT)))
 
+#ifndef UsePetersCpp17
 #ifdef ARDUINO_MAIN
 
 const uint16_t PROGMEM port_to_mode_PGM[] = {
@@ -158,7 +159,79 @@ const uint16_t PROGMEM port_to_input_PGM[] = {
 	(uint16_t) &PINK,
 	(uint16_t) &PINL,
 };
-
+#endif
+#define NO_PORT 0 // PS, to indicate there is no port for pin to port mapping
+typedef uint8_t PortType;
+#else
+#undef PA
+#undef PB
+#undef PC
+#undef PD
+#undef PE
+#undef PF
+#undef PG
+#undef PH
+#undef PJ
+#undef PK
+#undef PL
+enum class PortType: uint8_t {
+	No_Port=0, PA=1, PB=2, PC=3, PD=4, PE=5, PF=6, PG=7, PH=8, PJ=10, PK=11, PL=12
+};
+#define NO_PORT PortType::No_Port
+constexpr inline
+volatile uint8_t *port_to_mode_PS(PortType port) noexcept {
+	switch(port){
+	case PortType::PA: return  &DDRA;
+	case PortType::PB: return  &DDRB;
+	case PortType::PC: return  &DDRC;
+	case PortType::PD: return  &DDRD;
+	case PortType::PE: return  &DDRE;
+	case PortType::PF: return  &DDRF;
+	case PortType::PG: return  &DDRG;
+	case PortType::PH: return  &DDRH;
+	case PortType::PJ: return  &DDRJ;
+	case PortType::PK: return  &DDRK;
+	case PortType::PL: return  &DDRL;
+	default: return NOT_A_PORT; // nullptr
+	}
+}
+constexpr inline
+volatile uint8_t *port_to_output_PS(PortType port) noexcept {
+	switch(port){
+	case PortType::PA: return  &PORTA;
+	case PortType::PB: return  &PORTB;
+	case PortType::PC: return  &PORTC;
+	case PortType::PD: return  &PORTD;
+	case PortType::PE: return  &PORTE;
+	case PortType::PF: return  &PORTF;
+	case PortType::PG: return  &PORTG;
+	case PortType::PH: return  &PORTH;
+	case PortType::PJ: return  &PORTJ;
+	case PortType::PK: return  &PORTK;
+	case PortType::PL: return  &PORTL;
+	default: return NOT_A_PORT; // nullptr
+	}
+}
+constexpr inline
+volatile uint8_t *port_to_input_PS(PortType port) noexcept {
+	switch(port){
+	case PortType::PA: return  &PINA;
+	case PortType::PB: return  &PINB;
+	case PortType::PC: return  &PINC;
+	case PortType::PD: return  &PIND;
+	case PortType::PE: return  &PINE;
+	case PortType::PF: return  &PINF;
+	case PortType::PG: return  &PING;
+	case PortType::PH: return  &PINH;
+	case PortType::PJ: return  &PINJ;
+	case PortType::PK: return  &PINK;
+	case PortType::PL: return  &PINL;
+	default: return NOT_A_PORT; // nullptr
+	}
+}
+#endif
+#ifndef UsePetersCpp17
+#ifdef ARDUINO_MAIN
 const uint8_t PROGMEM digital_pin_to_port_PGM[] = {
 	// PORTLIST		
 	// -------------------------------------------		
@@ -233,7 +306,60 @@ const uint8_t PROGMEM digital_pin_to_port_PGM[] = {
 	PK	, // PK 6 ** 68 ** A14	
 	PK	, // PK 7 ** 69 ** A15	
 };
+#endif
+#else
+enum class PinType:uint8_t {
+	D00, D01, D02, D03, D04, D05, D06, D07,	D08, D09,
+	D10, D11, D12, D13, D14, D15, D16, D17, D18, D19,
+	D20, D21, D22, D23, D24, D25, D26, D27, D28, D29,
+	D30, D31, D32, D33, D34, D35, D36, D37, D38, D39,
+	D40, D41, D42, D43, D44, D45, D46, D47, D48, D49,
+	D50, D51, D52, D53, D54, D55, D56, D57, D58, D59,
+	D60, D61, D62, D63, D64, D65, D66, D67, D68, D69,
+	USART0_RX=D00,USART0_TX=D01,
+	PWM2=D02, PWM3=D03, PWM4=D04, PWM5=D05, PWM6=D06, PWM7=D07,
+	PWM8=D08, PWM9=D09, PWM10=D10, PWM11=D11, PWM12=D12, PWM13=D13,
+	USART3_TX=D14, USART3_RX=D15, USART2_TX=D16, USART2_RX=D17,
+	USART1_TX=D18, USART1_RX=D19,
+	SPI_MISO=D50, SPI_MOSI=D51, SPI_SCK=D52, SPI_SS=D53,
+	I2C_SDA=D20, I2C_SCL=D21,
+	A0=D54, A1=D55, A2=D56, A3=D57, A4=D58, A5=D59,
+	A6=D60, A7=D61, A8=D62, A9=D63, A10=D64, A11=D65,
+	A12=D66, A13=D67, A14=D68, A15=D69
+};
+constexpr inline PortType digital_pin_to_Port_PS(uint8_t pin) noexcept {
+	using PT=PinType;
+	switch(static_cast<PinType>(pin)){
+	case PT::D22: case PT::D23: case PT::D24: case PT::D25: case PT::D26: case PT::D27: case PT::D28: case PT::D29:
+		return PortType::PA;
+	case PT::D10: case PT::D11: case PT::D12: case PT::D13: case PT::D50: case PT::D51: case PT::D52: case PT::D53:
+		return PortType::PB;
+	case PT::D30: case PT::D31: case PT::D32: case PT::D33: case PT::D34: case PT::D35: case PT::D36: case PT::D37:
+		return PortType::PC;
+	case PT::D18: case PT::D19: case PT::D20: case PT::D21: case PT::D38:
+		return PortType::PD;
+	case PT::D00: case PT::D01: case PT::D02: case PT::D03:	case PT::D05:
+		return PortType::PE;
+	case PT::D54: case PT::D55: case PT::D56: case PT::D57: case PT::D58: case PT::D59: case PT::D60: case PT::D61:
+		return PortType::PF;
+	case PT::D04: case PT::D39: case PT::D40: case PT::D41:
+		return PortType::PG;
+	case PT::D06: case PT::D07: case PT::D08: case PT::D09: case PT::D16: case PT::D17:
+		return PortType::PH;
+	case PT::D14: case PT::D15:
+		return PortType::PJ;
+	case PT::D62: case PT::D63: case PT::D64: case PT::D65: case PT::D66: case PT::D67: case PT::D68: case PT::D69:
+		return PortType::PK;
+	case PT::D42: case PT::D43: case PT::D44: case PT::D45: case PT::D46: case PT::D47: case PT::D48: case PT::D49:
+		return PortType::PL;
+	}
+	return NO_PORT;
+}
 
+#endif
+
+#ifndef UsePetersCpp17
+#ifdef ARDUINO_MAIN
 const uint8_t PROGMEM digital_pin_to_bit_mask_PGM[] = {
 	// PIN IN PORT		
 	// -------------------------------------------		
@@ -308,6 +434,41 @@ const uint8_t PROGMEM digital_pin_to_bit_mask_PGM[] = {
 	_BV( 6 )	, // PK 6 ** 68 ** A14	
 	_BV( 7 )	, // PK 7 ** 69 ** A15	
 };
+#endif
+#else
+struct bitmask {
+enum  bitmask_in_byte:uint8_t {
+	b0=1,b1=2,b2=4,b3=8,b4=16,b5=32,b6=64,b7=128
+};
+static constexpr inline uint8_t digital_pin_to_BitMask_PS(uint8_t const pin) noexcept {
+	using PT=PinType;
+	switch (static_cast<PinType>(pin)) {
+		case PT::D00: case PT::D15: case PT::D17: case PT::D21: case PT::D22: case PT::D37: case PT::D41: case PT::D49: case PT::D53: case PT::D54: case PT::D62:
+			return bitmask_in_byte::b0;
+		case PT::D01: case PT::D14: case PT::D16: case PT::D20: case PT::D23: case PT::D36: case PT::D40: case PT::D48: case PT::D52: case PT::D55: case PT::D63:
+			return bitmask_in_byte::b1;
+
+		case PT::D19: case PT::D24: case PT::D35: case PT::D39: case PT::D47: case PT::D51: case PT::D56: case PT::D64:
+			return bitmask_in_byte::b2;
+
+		case PT::D05: case PT::D06: case PT::D18: case PT::D25: case PT::D34: case PT::D46: case PT::D50: case PT::D57: case PT::D65:
+			return bitmask_in_byte::b3;
+
+		case PT::D02: case PT::D07: case PT::D10: case PT::D26: case PT::D33: case PT::D45: case PT::D58: case PT::D66:
+			return bitmask_in_byte::b4;
+		case PT::D03: case PT::D04: case PT::D08: case PT::D11: case PT::D27: case PT::D32: case PT::D44: case PT::D59: case PT::D67:
+			return bitmask_in_byte::b5;
+		case PT::D09: case PT::D12: case PT::D28: case PT::D31: case PT::D43: case PT::D60: case PT::D68:
+			return bitmask_in_byte::b6;
+		case PT::D13: case PT::D29: case PT::D30: case PT::D38: case PT::D42: case PT::D61: case PT::D69:
+			return bitmask_in_byte::b7;
+	}
+	return 0; // 0 might break code, may be, but would be better indicator.
+}
+};
+#endif
+#ifndef UsePetersCpp17
+#ifdef ARDUINO_MAIN
 
 const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 	// TIMERS		
@@ -384,6 +545,45 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 	NOT_ON_TIMER	, // PK 7 ** 69 ** A15	
 };
 
+#endif
+#else
+constexpr inline uint8_t digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+	using PT=PinType;
+	switch (static_cast<PinType>(pin)) {
+	case PT::D02:
+		return TIMER3B;
+	case PT::D03:
+		return TIMER3C;
+	case PT::D04:
+		return TIMER0B;
+	case PT::D05:
+		return TIMER3A;
+	case PT::D06:
+		return TIMER4A;
+	case PT::D07:
+		return TIMER4B;
+	case PT::D08:
+		return TIMER4C;
+	case PT::D09:
+		return TIMER2B;
+	case PT::D10:
+		return TIMER2A;
+	case PT::D11:
+		return TIMER1A;
+	case PT::D12:
+		return TIMER1B;
+	case PT::D13:
+		return TIMER0A;
+	case PT::D44:
+		return TIMER5C;
+	case PT::D45:
+		return TIMER5B;
+	case PT::D46:
+		return TIMER5A;
+	default:
+		return NOT_ON_TIMER;
+	}
+}
 #endif
 
 // These serial port names are intended to allow libraries and architecture-neutral

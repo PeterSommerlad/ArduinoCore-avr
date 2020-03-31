@@ -35,7 +35,7 @@
 
 struct EERef{
 
-    EERef( const int index )
+    explicit EERef( const int index )
         : index( index )                 {}
     
     //Access/read members.
@@ -73,7 +73,7 @@ struct EERef{
         return --(*this), ret;
     }
     
-    int index; //Index of current EEPROM cell.
+    int const index; //Index of current EEPROM cell.
 };
 
 /***

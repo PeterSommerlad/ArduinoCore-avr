@@ -26,18 +26,32 @@
 #include "wiring_private.h"
 #include "pins_arduino.h"
 
+
+
 void pinMode(uint8_t pin, uint8_t mode)
 {
 	uint8_t bit = digitalPinToBitMask(pin);
-	uint8_t port = digitalPinToPort(pin);
-	volatile uint8_t *reg, *out;
+	PortType port = digitalPinToPort(pin);
 
-	if (port == NOT_A_PIN) return;
 
-	// JWS: can I let the optimizer do this?
-	reg = portModeRegister(port);
-	out = portOutputRegister(port);
+	if (port == NO_PORT) return;
 
+	volatile uint8_t *reg = portModeRegister(port);
+	volatile uint8_t *out = portOutputRegister(port);
+#ifdef UsePetersCpp17
+	if (mode == INPUT) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out &= ~bit;
+	} else if (mode == INPUT_PULLUP) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out |= bit;
+	} else {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg |= bit;
+	}
+#else
 	if (mode == INPUT) { 
 		uint8_t oldSREG = SREG;
                 cli();
@@ -56,6 +70,7 @@ void pinMode(uint8_t pin, uint8_t mode)
 		*reg |= bit;
 		SREG = oldSREG;
 	}
+#endif
 }
 
 // Forcing this inline keeps the callers from having to push their own stuff
@@ -139,36 +154,40 @@ void digitalWrite(uint8_t pin, uint8_t val)
 {
 	uint8_t timer = digitalPinToTimer(pin);
 	uint8_t bit = digitalPinToBitMask(pin);
-	uint8_t port = digitalPinToPort(pin);
-	volatile uint8_t *out;
+	PortType port = digitalPinToPort(pin);
 
-	if (port == NOT_A_PIN) return;
+	if (port == NO_PORT) return; // should use the enum...
 
 	// If the pin that support PWM output, we need to turn it off
 	// before doing a digital write.
 	if (timer != NOT_ON_TIMER) turnOffPWM(timer);
 
-	out = portOutputRegister(port);
+	volatile uint8_t *out = portOutputRegister(port);
 
+#ifdef UsePetersCpp17
+	SafeStatusRegisterAndClearInterrupt safe;
+#else
 	uint8_t oldSREG = SREG;
 	cli();
-
+#endif
 	if (val == LOW) {
 		*out &= ~bit;
 	} else {
 		*out |= bit;
 	}
 
+#ifndef UsePetersCpp17
 	SREG = oldSREG;
+#endif
 }
 
 int digitalRead(uint8_t pin)
 {
 	uint8_t timer = digitalPinToTimer(pin);
 	uint8_t bit = digitalPinToBitMask(pin);
-	uint8_t port = digitalPinToPort(pin);
+	PortType port = digitalPinToPort(pin);
 
-	if (port == NOT_A_PIN) return LOW;
+	if (port == NO_PORT) return LOW;
 
 	// If the pin that support PWM output, we need to turn it off
 	// before getting a digital reading.

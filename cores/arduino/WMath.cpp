@@ -21,9 +21,10 @@
   Boston, MA  02111-1307  USA
 */
 
-extern "C" {
+//extern "C" {
   #include "stdlib.h"
-}
+  #include "stdint.h"
+//} // PS should not be necessary with gcc
 
 void randomSeed(unsigned long seed)
 {
@@ -48,11 +49,15 @@ long random(long howsmall, long howbig)
   long diff = howbig - howsmall;
   return random(diff) + howsmall;
 }
+#ifndef UsePetersCpp17
 
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min; // PS could result in overflow and div 0
 }
 
-unsigned int makeWord(unsigned int w) { return w; }
-unsigned int makeWord(unsigned char h, unsigned char l) { return (h << 8) | l; }
+uint16_t makeWord(uint16_t w) { return w; }
+uint16_t makeWord(uint8_t h, uint8_t l) { // PS: accidental conformance, use same spelling as in header
+	return (static_cast<uint16_t>(h) << 8u) | l; // PS: without cast, int is used for operations
+}
+#endif

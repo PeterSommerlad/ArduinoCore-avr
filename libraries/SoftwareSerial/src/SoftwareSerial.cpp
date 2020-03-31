@@ -275,7 +275,7 @@ void SoftwareSerial::setTX(uint8_t tx)
   digitalWrite(tx, _inverse_logic ? LOW : HIGH);
   pinMode(tx, OUTPUT);
   _transmitBitMask = digitalPinToBitMask(tx);
-  uint8_t port = digitalPinToPort(tx);
+  PortType port = digitalPinToPort(tx);
   _transmitPortRegister = portOutputRegister(port);
 }
 
@@ -286,7 +286,7 @@ void SoftwareSerial::setRX(uint8_t rx)
     digitalWrite(rx, HIGH);  // pullup for normal logic!
   _receivePin = rx;
   _receiveBitMask = digitalPinToBitMask(rx);
-  uint8_t port = digitalPinToPort(rx);
+  PortType port = digitalPinToPort(rx);
   _receivePortRegister = portInputRegister(port);
 }
 
@@ -426,7 +426,7 @@ size_t SoftwareSerial::write(uint8_t b)
   volatile uint8_t *reg = _transmitPortRegister;
   uint8_t reg_mask = _transmitBitMask;
   uint8_t inv_mask = ~_transmitBitMask;
-  uint8_t oldSREG = SREG;
+  uint8_t oldSREG = SREG; // PS: check if this would generate same code with SafeStatusRegAndCli RAII
   bool inv = _inverse_logic;
   uint16_t delay = _tx_delay;
 

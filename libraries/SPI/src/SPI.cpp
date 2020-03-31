@@ -29,7 +29,7 @@ void SPIClass::begin()
   noInterrupts(); // Protect from a scheduler and prevent transactionBegin
   if (!initialized) {
     // Set SS to high so a connected chip will be "deselected" by default
-    uint8_t port = digitalPinToPort(SS);
+    PortType port = digitalPinToPort(SS);
     uint8_t bit = digitalPinToBitMask(SS);
     volatile uint8_t *reg = portModeRegister(port);
 

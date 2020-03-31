@@ -21,6 +21,8 @@
 */
 
 #include "wiring_private.h"
+#include "pins_arduino.h" // needed now, because of inline functions used instead of extern tables
+
 
 uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder) {
 	uint8_t value = 0;

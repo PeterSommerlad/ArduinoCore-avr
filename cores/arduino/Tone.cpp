@@ -37,7 +37,7 @@ Version Modified By Date     Comments
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "Arduino.h"
-#include "pins_arduino.h"
+//#include "pins_arduino.h" // PS superfluous in Arduino.h
 
 #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega128__)
 #define TCCR2A TCCR2
@@ -245,9 +245,7 @@ void tone(uint8_t _pin, unsigned int frequency, unsigned long duration)
   uint8_t prescalarbits = 0b001;
   long toggle_count = 0;
   uint32_t ocr = 0;
-  int8_t _timer;
-
-  _timer = toneBegin(_pin);
+  int8_t _timer = toneBegin(_pin);
 
   if (_timer >= 0)
   {

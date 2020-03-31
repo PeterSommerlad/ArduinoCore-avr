@@ -28,6 +28,12 @@
 #define NUM_DIGITAL_PINS            20
 #define NUM_ANALOG_INPUTS           6
 #define analogInputToDigitalPin(p)  ((p < 6) ? (p) + 14 : -1)
+// analogInputToDigitalPin does not seem to be used
+
+#ifndef UsePetersCpp17
+#define NO_PORT 0 // PS, to indicate there is no port for pin to port mapping
+typedef uint8_t PortType;
+
 
 #if defined(__AVR_ATmega8__)
 #define digitalPinHasPWM(p)         ((p) == 9 || (p) == 10 || (p) == 11)
@@ -109,7 +115,7 @@ static const uint8_t A7 = PIN_A7;
 //
 // 0-7 PE0-PE7   works
 // 8-13 PB0-PB5  works
-// 14-21 PA0-PA7 works 
+// 14-21 PA0-PA7 works
 // 22-29 PH0-PH7 works
 // 30-35 PG5-PG0 works
 // 36-43 PC7-PC0 works
@@ -230,6 +236,208 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 	NOT_ON_TIMER,
 	NOT_ON_TIMER,
 };
+
+#endif
+#else
+
+#if defined(__AVR_ATmega8__)
+#define digitalPinHasPWM(p)         ((p) == 9 || (p) == 10 || (p) == 11)
+#else
+#define digitalPinHasPWM(p)         ((p) == 3 || (p) == 5 || (p) == 6 || (p) == 9 || (p) == 10 || (p) == 11)
+#endif
+
+#define PIN_SPI_SS    (10)
+#define PIN_SPI_MOSI  (11)
+#define PIN_SPI_MISO  (12)
+#define PIN_SPI_SCK   (13)
+
+constexpr inline uint8_t SS   = PIN_SPI_SS;
+constexpr inline uint8_t MOSI = PIN_SPI_MOSI;
+constexpr inline uint8_t MISO = PIN_SPI_MISO;
+constexpr inline uint8_t SCK  = PIN_SPI_SCK;
+
+#define PIN_WIRE_SDA        (18)
+#define PIN_WIRE_SCL        (19)
+
+constexpr inline uint8_t SDA = PIN_WIRE_SDA;
+constexpr inline uint8_t SCL = PIN_WIRE_SCL;
+
+#define LED_BUILTIN 13
+
+#define PIN_A0   (14)
+#define PIN_A1   (15)
+#define PIN_A2   (16)
+#define PIN_A3   (17)
+#define PIN_A4   (18)
+#define PIN_A5   (19)
+#define PIN_A6   (20)
+#define PIN_A7   (21)
+
+constexpr inline uint8_t A0 = PIN_A0;
+constexpr inline uint8_t A1 = PIN_A1;
+constexpr inline uint8_t A2 = PIN_A2;
+constexpr inline uint8_t A3 = PIN_A3;
+constexpr inline uint8_t A4 = PIN_A4;
+constexpr inline uint8_t A5 = PIN_A5;
+constexpr inline uint8_t A6 = PIN_A6;
+constexpr inline uint8_t A7 = PIN_A7;
+
+#define digitalPinToPCICR(p)    (((p) >= 0 && (p) <= 21) ? (&PCICR) : ((uint8_t *)0))
+#define digitalPinToPCICRbit(p) (((p) <= 7) ? 2 : (((p) <= 13) ? 0 : 1))
+#define digitalPinToPCMSK(p)    (((p) <= 7) ? (&PCMSK2) : (((p) <= 13) ? (&PCMSK0) : (((p) <= 21) ? (&PCMSK1) : ((uint8_t *)0))))
+#define digitalPinToPCMSKbit(p) (((p) <= 7) ? (p) : (((p) <= 13) ? ((p) - 8) : ((p) - 14)))
+
+#define digitalPinToInterrupt(p)  ((p) == 2 ? 0 : ((p) == 3 ? 1 : NOT_AN_INTERRUPT))
+
+
+// On the Arduino board, digital pins are also used
+// for the analog output (software PWM).  Analog input
+// pins are a separate set.
+
+// ATMEL ATMEGA8 & 168 / ARDUINO
+//
+//                  +-\/-+
+//            PC6  1|    |28  PC5 (AI 5)
+//      (D 0) PD0  2|    |27  PC4 (AI 4)
+//      (D 1) PD1  3|    |26  PC3 (AI 3)
+//      (D 2) PD2  4|    |25  PC2 (AI 2)
+// PWM+ (D 3) PD3  5|    |24  PC1 (AI 1)
+//      (D 4) PD4  6|    |23  PC0 (AI 0)
+//            VCC  7|    |22  GND
+//            GND  8|    |21  AREF
+//            PB6  9|    |20  AVCC
+//            PB7 10|    |19  PB5 (D 13)
+// PWM+ (D 5) PD5 11|    |18  PB4 (D 12)
+// PWM+ (D 6) PD6 12|    |17  PB3 (D 11) PWM
+//      (D 7) PD7 13|    |16  PB2 (D 10) PWM
+//      (D 8) PB0 14|    |15  PB1 (D 9) PWM
+//                  +----+
+//
+// (PWM+ indicates the additional PWM pins on the ATmega168.)
+
+// ATMEL ATMEGA1280 / ARDUINO
+//
+// 0-7 PE0-PE7   works
+// 8-13 PB0-PB5  works
+// 14-21 PA0-PA7 works 
+// 22-29 PH0-PH7 works
+// 30-35 PG5-PG0 works
+// 36-43 PC7-PC0 works
+// 44-51 PJ7-PJ0 works
+// 52-59 PL7-PL0 works
+// 60-67 PD7-PD0 works
+// A0-A7 PF0-PF7
+// A8-A15 PK0-PK7
+
+
+// standard arduinos have 3 ports
+// Arduino.h defines plenty of port macros if ARDUINO_MAIN is defined. shouldn't?
+#ifdef PB
+#undef PA
+#undef PB
+#undef PC
+#undef PD
+#undef PE
+#undef PF
+#undef PG
+#undef PH
+#undef PJ
+#undef PK
+#undef PL
+#endif
+
+enum class PortType: uint8_t {
+	No_Port=0, PB=2, PC=3, PD=4
+};
+#define NO_PORT PortType::No_Port
+
+constexpr inline
+volatile uint8_t *port_to_mode_PS(PortType port) noexcept {
+	switch(port){
+	case PortType::PB: return  &DDRB;
+	case PortType::PC: return  &DDRC;
+	case PortType::PD: return  &DDRD;
+	default: return NOT_A_PORT; // nullptr
+	}
+}
+constexpr inline
+volatile uint8_t *port_to_output_PS(PortType port) noexcept {
+	switch(port){
+	case PortType::PB: return  &PORTB;
+	case PortType::PC: return  &PORTC;
+	case PortType::PD: return  &PORTD;
+	default: return NOT_A_PORT; // nullptr
+	}
+}
+constexpr inline
+volatile uint8_t *port_to_input_PS(PortType port) noexcept {
+	switch(port){
+	case PortType::PB: return  &PINB;
+	case PortType::PC: return  &PINC;
+	case PortType::PD: return  &PIND;
+	default: return NOT_A_PORT; // nullptr
+	}
+}
+enum class PinType:uint8_t {
+	D00, D01, D02, D03, D04, D05, D06, D07, D08, D09, D10, D11, D12, D13,
+	A0 = PIN_A0, A1, A2, A3, A4, A5
+};
+
+constexpr inline PortType digital_pin_to_Port_PS(uint8_t const pin) noexcept {
+	if (static_cast<PinType>(pin) < PinType::D08) return PortType::PD;
+	else if (static_cast<PinType>(pin) < PinType::A0) return PortType::PB;
+	else if (static_cast<PinType>(pin) <= PinType::A5) return PortType::PC;
+	else return NO_PORT;
+}
+struct bitmask {
+enum  bitmask_in_byte:uint8_t {
+	b0=1,b1=2,b2=4,b3=8,b4=16,b5=32,b6=64,b7=128
+};
+static constexpr inline uint8_t digital_pin_to_BitMask_PS(uint8_t const pin) noexcept {
+	switch (static_cast<PinType>(pin)) {
+	case PinType::D00:	case PinType::D08:	case PinType::A0:
+		return bitmask_in_byte::b0;
+	case PinType::D01:	case PinType::D09:	case PinType::A1:
+		return bitmask_in_byte::b1;
+	case PinType::D02:	case PinType::D10:	case PinType::A2:
+		return bitmask_in_byte::b2;
+	case PinType::D03:	case PinType::D11:	case PinType::A3:
+		return bitmask_in_byte::b3;
+	case PinType::D04:	case PinType::D12:	case PinType::A4:
+		return bitmask_in_byte::b4;
+	case PinType::D05:	case PinType::D13:	case PinType::A5:
+		return bitmask_in_byte::b5;
+	case PinType::D06:
+		return bitmask_in_byte::b6;
+	case PinType::D07:
+		return bitmask_in_byte::b7;
+	}
+	return 0; // 0 might break code, may be, but is better indicator.
+}
+};
+constexpr inline uint8_t digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+	switch (static_cast<PinType>(pin)) {
+#if defined(__AVR_ATmega8__)
+	case PinType::D11:
+		return TIMER2;//,		/* 11 */
+#else
+	case PinType::D03:/* 3 */
+		return 	TIMER2B;
+	case PinType::D05:
+		return TIMER0B;//,		/* 5 */
+	case PinType::D06:
+		return TIMER0A;//,		/* 6 */
+	case PinType::D11:
+		return TIMER2A;//,		/* 11 */
+#endif
+	case PinType::D09:
+		return TIMER1A;//,		/* 9 */
+	case PinType::D10:
+		return TIMER1B;//,		/* 10 */
+	default:
+		return NOT_ON_TIMER;
+	}
+}
 
 #endif
 

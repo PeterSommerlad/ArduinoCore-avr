@@ -43,8 +43,75 @@ microp.build.pid=0x8037
 microp.build.usb_product="Peters microp"
 microp.build.board=AVR_MICRO
 microp.build.core=arduino
-microp.build.variant=microp
-microp.build.extra_flags={build.usb_flags}
+microp.build.variant=micro
+microp.build.extra_flags={build.usb_flags} -DUsePetersCpp17
+
+
+################# My Uno with Cpp17
+
+unop.name=Peters Uno
+
+unop.vid.0=0x2341
+unop.pid.0=0x0043
+unop.vid.1=0x2341
+unop.pid.1=0x0001
+unop.vid.2=0x2A03
+unop.pid.2=0x0043
+unop.vid.3=0x2341
+unop.pid.3=0x0243
+
+unop.upload.tool=avrdude
+unop.upload.protocol=arduino
+unop.upload.maximum_size=32256
+unop.upload.maximum_data_size=2048
+unop.upload.speed=115200
+
+unop.bootloader.tool=avrdude
+unop.bootloader.low_fuses=0xFF
+unop.bootloader.high_fuses=0xDE
+unop.bootloader.extended_fuses=0xFD
+unop.bootloader.unlock_bits=0x3F
+unop.bootloader.lock_bits=0x0F
+unop.bootloader.file=optiboot/optiboot_atmega328.hex
+
+unop.build.mcu=atmega328p
+unop.build.f_cpu=16000000L
+unop.build.board=AVR_UNO
+unop.build.core=arduino
+unop.build.variant=standard
+unop.build.extra_flags=-DUsePetersCpp17
+###############################################
+megaADKP.name=Peters Mega ADK
+
+megaADKP.vid.0=0x2341
+megaADKP.pid.0=0x003f
+megaADKP.vid.1=0x2341
+megaADKP.pid.1=0x0044
+megaADKP.vid.2=0x2A03
+megaADKP.pid.2=0x003f
+megaADKP.vid.3=0x2A03
+megaADKP.pid.3=0x0044
+
+megaADKP.upload.tool=avrdude
+megaADKP.upload.protocol=wiring
+megaADKP.upload.maximum_size=253952
+megaADKP.upload.maximum_data_size=8192
+megaADKP.upload.speed=115200
+
+megaADKP.bootloader.tool=avrdude
+megaADKP.bootloader.low_fuses=0xFF
+megaADKP.bootloader.high_fuses=0xD8
+megaADKP.bootloader.extended_fuses=0xFD
+megaADKP.bootloader.file=stk500v2/stk500boot_v2_mega2560.hex
+megaADKP.bootloader.unlock_bits=0x3F
+megaADKP.bootloader.lock_bits=0x0F
+
+megaADKP.build.mcu=atmega2560
+megaADKP.build.f_cpu=16000000L
+megaADKP.build.board=AVR_ADK
+megaADKP.build.core=arduino
+megaADKP.build.variant=mega
+megaADKP.build.extra_flags=-DUsePetersCpp17
 
 ##############################################################
 

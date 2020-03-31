@@ -29,12 +29,13 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "binary.h"
+//#include "binary.h" // needless in C++, because we have binary literals
 
 #ifdef __cplusplus
+// for checking that this core is actually used
 constexpr auto AN{0x1};
 constexpr auto AUS{0x0};
-constexpr auto PETERSOUTPUT{0x1};
+
 extern "C"{
 void yield(void);
 }
@@ -283,9 +284,7 @@ typedef uint8_t byte;
 // triage C/C++ part
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+
 // avr-libc defines _NOP() since 1.6.2
 #ifndef _NOP
 #define _NOP() do { __asm__ volatile ("nop"); } while (0)
@@ -294,9 +293,13 @@ extern "C"{
 
 void init(void);
 void initVariant(void);
-
+#ifdef __cplusplus
+extern "C"{
+#endif
 int atexit(void (*func)()) __attribute__((weak));
-
+#ifdef __cplusplus
+}
+#endif
 void pinMode(uint8_t pin, uint8_t mode);
 void digitalWrite(uint8_t pin, uint8_t val);
 int digitalRead(uint8_t pin);
@@ -319,41 +322,67 @@ void detachInterrupt(uint8_t interruptNum);
 
 void setup(void);
 void loop(void);
-
 // Get the bit location within the hardware port of the given virtual pin.
 // This comes from the pins_*.c file for the active board configuration.
 
 #define analogInPinToBit(P) (P)
 
-// On the ATmega1280, the addresses of some of the port registers are
-// greater than 255, so we can't store them in uint8_t's.
-extern const uint16_t PROGMEM port_to_mode_PGM[];
-extern const uint16_t PROGMEM port_to_input_PGM[];
-extern const uint16_t PROGMEM port_to_output_PGM[];
-
-extern const uint8_t PROGMEM digital_pin_to_port_PGM[];
-// extern const uint8_t PROGMEM digital_pin_to_bit_PGM[];
-extern const uint8_t PROGMEM digital_pin_to_bit_mask_PGM[];
-extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 
 // Get the bit location within the hardware port of the given virtual pin.
 // This comes from the pins_*.c file for the active board configuration.
 // 
 // These perform slightly better as macros compared to inline functions
 //
+#ifdef UsePetersCpp17
+#define digitalPinToPort(P) digital_pin_to_Port_PS(P)
+#define digitalPinToBitMask(P) bitmask::digital_pin_to_BitMask_PS(P)
+#define digitalPinToTimer(P) (digital_pin_to_timer_PS(P))
+#define portOutputRegister(P) port_to_output_PS(P)
+#define portInputRegister(P) port_to_input_PS(P)
+#define portModeRegister(P) port_to_mode_PS(P)
+#define NOT_A_PORT nullptr
+
+// for use in wiring etc., already similar in USBCore, but with extras
+struct SafeStatusRegisterAndClearInterrupt{
+	uint8_t oldSREG;
+	SafeStatusRegisterAndClearInterrupt()
+	:oldSREG{SREG} {
+		cli();
+	}
+	~SafeStatusRegisterAndClearInterrupt(){
+		SREG = oldSREG;
+	}
+};
+
+
+#else
+#ifndef NO_PORT
+#define NO_PORT 0 // PS, to indicate there is no port for pin to port mapping
+typedef uint8_t PortType;
+#endif
+#ifdef __cplusplus
+extern "C"{
+#endif
+// On the ATmega1280, the addresses of some of the port registers are
+// greater than 255, so we can't store them in uint8_t's.
+extern const uint16_t PROGMEM port_to_mode_PGM[];
+extern const uint16_t PROGMEM port_to_input_PGM[];
+extern const uint16_t PROGMEM port_to_output_PGM[];
+extern const uint8_t PROGMEM digital_pin_to_port_PGM[];
+// extern const uint8_t PROGMEM digital_pin_to_bit_PGM[];
+extern const uint8_t PROGMEM digital_pin_to_bit_mask_PGM[];
+extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 #define digitalPinToPort(P) ( pgm_read_byte( digital_pin_to_port_PGM + (P) ) )
 #define digitalPinToBitMask(P) ( pgm_read_byte( digital_pin_to_bit_mask_PGM + (P) ) )
 #define digitalPinToTimer(P) ( pgm_read_byte( digital_pin_to_timer_PGM + (P) ) )
-#define analogInPinToBit(P) (P)
 #define portOutputRegister(P) ( (volatile uint8_t *)( pgm_read_word( port_to_output_PGM + (P))) )
 #define portInputRegister(P) ( (volatile uint8_t *)( pgm_read_word( port_to_input_PGM + (P))) )
 #define portModeRegister(P) ( (volatile uint8_t *)( pgm_read_word( port_to_mode_PGM + (P))) )
-
-#define NOT_A_PIN 0
 #define NOT_A_PORT 0
-
-#define NOT_AN_INTERRUPT -1
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
+// PS: should not be done here...
 #ifdef ARDUINO_MAIN
 #define PA 1
 #define PB 2
@@ -367,7 +396,39 @@ extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 #define PK 11
 #define PL 12
 #endif
+#endif
+#define analogInPinToBit(P) (P)
 
+#define NOT_A_PIN 0
+
+#define NOT_AN_INTERRUPT -1
+
+
+#ifdef UsePetersCpp17
+enum timer_values:uint8_t {
+NOT_ON_TIMER=0,
+TIMER0A = 1,
+TIMER0B = 2,
+TIMER1A = 3,
+TIMER1B = 4,
+TIMER1C = 5,
+TIMER2  = 6,
+TIMER2A = 7,
+TIMER2B = 8,
+
+TIMER3A = 9,
+TIMER3B = 10,
+TIMER3C = 11,
+TIMER4A = 12,
+TIMER4B = 13,
+TIMER4C = 14,
+TIMER4D = 15,
+TIMER5A = 16,
+TIMER5B = 17,
+TIMER5C = 18
+
+};
+#else
 #define NOT_ON_TIMER 0
 #define TIMER0A 1
 #define TIMER0B 2
@@ -388,10 +449,8 @@ extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 #define TIMER5A 16
 #define TIMER5B 17
 #define TIMER5C 18
-
-#ifdef __cplusplus
-} // extern "C"
 #endif
+
 
 #ifdef __cplusplus
 #include "WCharacter.h"
@@ -401,10 +460,18 @@ extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 #if defined(HAVE_HWSERIAL0) && defined(HAVE_CDCSERIAL)
 #error "Targets with both UART0 and CDC serial not supported"
 #endif
-
+#ifdef UsePetersCpp17
+constexpr inline
+uint16_t makeWord(uint16_t w) noexcept { return w; }
+constexpr inline
+uint16_t makeWord(uint8_t h, uint8_t l) noexcept {
+	return (static_cast<uint16_t>(h) << 8u) | l; // PS: without cast or u, int is used for operations
+}
+#else
 uint16_t makeWord(uint16_t w);
-uint16_t makeWord(byte h, byte l);
-
+uint16_t makeWord(uint8_t h, uint8_t l);
+#endif
+// PS: I think the following macro is ridiculous.... but it is part of the API
 #define word(...) makeWord(__VA_ARGS__)
 
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout = 1000000L);
@@ -417,7 +484,15 @@ void noTone(uint8_t _pin);
 long random(long);
 long random(long, long);
 void randomSeed(unsigned long);
+#ifdef UsePetersCpp17
+constexpr inline
+long map(long x, long in_min, long in_max, long out_min, long out_max) noexcept
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min; // PS could result in overflow and div 0
+}
+#else
 long map(long, long, long, long, long);
+#endif
 
 #endif
 

@@ -36,7 +36,7 @@ unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout)
 	// pulse width measuring loop and achieve finer resolution.  calling
 	// digitalRead() instead yields much coarser resolution.
 	uint8_t bit = digitalPinToBitMask(pin);
-	uint8_t port = digitalPinToPort(pin);
+	PortType port = digitalPinToPort(pin);
 	uint8_t stateMask = (state ? bit : 0);
 
 	// convert the timeout from microseconds to a number of times through
@@ -66,7 +66,7 @@ unsigned long pulseInLong(uint8_t pin, uint8_t state, unsigned long timeout)
 	// pulse width measuring loop and achieve finer resolution.  calling
 	// digitalRead() instead yields much coarser resolution.
 	uint8_t bit = digitalPinToBitMask(pin);
-	uint8_t port = digitalPinToPort(pin);
+	PortType port = digitalPinToPort(pin);
 	uint8_t stateMask = (state ? bit : 0);
 
 	unsigned long startMicros = micros();

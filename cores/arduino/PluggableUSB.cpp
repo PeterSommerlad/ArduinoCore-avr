@@ -17,7 +17,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "USBAPI.h"
+//#include "USBAPI.h" // PS: redundant
 #include "PluggableUSB.h"
 
 #if defined(USBCON)	
@@ -28,8 +28,8 @@ extern uint8_t _initEndpoints[];
 int PluggableUSB_::getInterface(uint8_t* interfaceCount)
 {
 	int sent = 0;
-	PluggableUSBModule* node;
-	for (node = rootNode; node; node = node->next) {
+	//PluggableUSBModule* node; // PS too large scope
+	for (PluggableUSBModule* node = rootNode; node; node = node->next) {
 		int res = node->getInterface(interfaceCount);
 		if (res < 0)
 			return -1;
@@ -40,8 +40,8 @@ int PluggableUSB_::getInterface(uint8_t* interfaceCount)
 
 int PluggableUSB_::getDescriptor(USBSetup& setup)
 {
-	PluggableUSBModule* node;
-	for (node = rootNode; node; node = node->next) {
+	//PluggableUSBModule* node; // PS too large scope
+	for (PluggableUSBModule* node = rootNode; node; node = node->next) {
 		int ret = node->getDescriptor(setup);
 		// ret!=0 -> request has been processed
 		if (ret)
@@ -52,8 +52,8 @@ int PluggableUSB_::getDescriptor(USBSetup& setup)
 
 void PluggableUSB_::getShortName(char *iSerialNum)
 {
-	PluggableUSBModule* node;
-	for (node = rootNode; node; node = node->next) {
+	//PluggableUSBModule* node;
+	for (PluggableUSBModule* node = rootNode; node; node = node->next) {
 		iSerialNum += node->getShortName(iSerialNum);
 	}
 	*iSerialNum = 0;
@@ -61,8 +61,8 @@ void PluggableUSB_::getShortName(char *iSerialNum)
 
 bool PluggableUSB_::setup(USBSetup& setup)
 {
-	PluggableUSBModule* node;
-	for (node = rootNode; node; node = node->next) {
+	//PluggableUSBModule* node;
+	for (PluggableUSBModule* node = rootNode; node; node = node->next) {
 		if (node->setup(setup)) {
 			return true;
 		}

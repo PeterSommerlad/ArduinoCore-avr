@@ -1,3 +1,4 @@
+
 /*
   Copyright (c) 2014 Arduino.  All right reserved.
 
@@ -15,6 +16,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#include "new.h" // PS for sanity. not really needed. But where is it used anyway
 
 #include <stdlib.h>
 

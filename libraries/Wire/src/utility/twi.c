@@ -18,7 +18,6 @@
 
   Modified 2012 by Todd Krein (todd@krein.org) to implement repeated starts
 */
-
 #include <math.h>
 #include <stdlib.h>
 #include <inttypes.h>

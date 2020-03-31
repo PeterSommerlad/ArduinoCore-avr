@@ -64,6 +64,10 @@ ISR(TIMER0_OVF_vect)
 
 unsigned long millis()
 {
+#ifdef UsePetersCpp17
+	SafeStatusRegisterAndClearInterrupt safe;
+	return timer0_millis;
+#else
 	unsigned long m;
 	uint8_t oldSREG = SREG;
 
@@ -74,13 +78,20 @@ unsigned long millis()
 	SREG = oldSREG;
 
 	return m;
+#endif
 }
 
 unsigned long micros() {
 	unsigned long m;
+
+#ifdef UsePetersCpp17
+	uint8_t t;
+	{	SafeStatusRegisterAndClearInterrupt safe;
+#else
 	uint8_t oldSREG = SREG, t;
 	
 	cli();
+#endif
 	m = timer0_overflow_count;
 #if defined(TCNT0)
 	t = TCNT0;
@@ -98,8 +109,11 @@ unsigned long micros() {
 		m++;
 #endif
 
+#ifdef UsePetersCpp17
+	} // end scope, so that return statement runs without lock
+#else
 	SREG = oldSREG;
-	
+#endif
 	return ((m << 8) + t) * (64 / clockCyclesPerMicrosecond());
 }
 
