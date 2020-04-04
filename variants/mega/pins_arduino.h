@@ -30,6 +30,8 @@
 #define analogInputToDigitalPin(p)  ((p < 16) ? (p) + 54 : -1)
 #define digitalPinHasPWM(p)         (((p) >= 2 && (p) <= 13) || ((p) >= 44 && (p)<= 46))
 
+#ifndef UsePetersCpp17
+// the following stuff *except macros, are now in enum PinType
 #define PIN_SPI_SS    (53)
 #define PIN_SPI_MOSI  (51)
 #define PIN_SPI_MISO  (50)
@@ -47,7 +49,6 @@ constexpr inline uint8_t SDA = PIN_WIRE_SDA;
 constexpr inline uint8_t SCL = PIN_WIRE_SCL;
 
 #define LED_BUILTIN 13
-
 #define PIN_A0   (54)
 #define PIN_A1   (55)
 #define PIN_A2   (56)
@@ -81,7 +82,7 @@ constexpr inline uint8_t A12 = PIN_A12;
 constexpr inline uint8_t A13 = PIN_A13;
 constexpr inline uint8_t A14 = PIN_A14;
 constexpr inline uint8_t A15 = PIN_A15;
-
+#endif
 // A majority of the pins are NOT PCINTs, SO BE WARNED (i.e. you cannot use them as receive pins)
 // Only pins available for RECEIVE (TRANSMIT can be on any pin):
 // (I've deliberately left out pin mapping to the Hardware USARTs - seems senseless to me)
@@ -174,61 +175,74 @@ typedef uint8_t PortType;
 #undef PJ
 #undef PK
 #undef PL
-enum class PortType: uint8_t {
-	No_Port=0, PA=1, PB=2, PC=3, PD=4, PE=5, PF=6, PG=7, PH=8, PJ=10, PK=11, PL=12
+enum  PortType: uint8_t {
+	No_Port=0, PA=1, PB=2, PC=3, PD=4, PE=5, PF=6, PG=7, PH=8, PJ=9, PK=10, PL=11 // contiguous port numbers make code simpler
 };
 #define NO_PORT PortType::No_Port
 constexpr inline
 volatile uint8_t *port_to_mode_PS(PortType port) noexcept {
-	switch(port){
-	case PortType::PA: return  &DDRA;
-	case PortType::PB: return  &DDRB;
-	case PortType::PC: return  &DDRC;
-	case PortType::PD: return  &DDRD;
-	case PortType::PE: return  &DDRE;
-	case PortType::PF: return  &DDRF;
-	case PortType::PG: return  &DDRG;
-	case PortType::PH: return  &DDRH;
-	case PortType::PJ: return  &DDRJ;
-	case PortType::PK: return  &DDRK;
-	case PortType::PL: return  &DDRL;
-	default: return NOT_A_PORT; // nullptr
+
+	if (port >= PortType::PA && port < PortType::PH) { // ports A to G DDR map to 0x21-0x33 +every 3 bits
+		return reinterpret_cast<volatile uint8_t *>((port-PortType::PA)*3 + 1 + 0x20);
+	} else if (port >= PortType::PH && port <= PortType::PL) {
+		return reinterpret_cast<volatile uint8_t *>((port-PortType::PH)*3 + 1 + 0x100);//(*(volatile uint8_t *)(0x104));
 	}
+	return NOT_A_PORT; // nullptr
 }
 constexpr inline
 volatile uint8_t *port_to_output_PS(PortType port) noexcept {
-	switch(port){
-	case PortType::PA: return  &PORTA;
-	case PortType::PB: return  &PORTB;
-	case PortType::PC: return  &PORTC;
-	case PortType::PD: return  &PORTD;
-	case PortType::PE: return  &PORTE;
-	case PortType::PF: return  &PORTF;
-	case PortType::PG: return  &PORTG;
-	case PortType::PH: return  &PORTH;
-	case PortType::PJ: return  &PORTJ;
-	case PortType::PK: return  &PORTK;
-	case PortType::PL: return  &PORTL;
-	default: return NOT_A_PORT; // nullptr
+
+	if (port >= PortType::PA && port < PortType::PH) { // ports A to G DDR map to 0x21-0x33 +every 3 bits
+		return reinterpret_cast<volatile uint8_t *>((port-PortType::PA)*3 + 2 + 0x20);
+	} else if (port >= PortType::PH && port <= PortType::PL) {
+		return reinterpret_cast<volatile uint8_t *>((port-PortType::PH)*3 + 2 + 0x100);//(*(volatile uint8_t *)(0x104));
 	}
+	return NOT_A_PORT; // nullptr
 }
+//constexpr inline
+//volatile uint8_t *port_to_output_PS(PortType port) noexcept {
+//	switch(port){
+//	case PortType::PA: return  &PORTA;
+//	case PortType::PB: return  &PORTB;
+//	case PortType::PC: return  &PORTC;
+//	case PortType::PD: return  &PORTD;
+//	case PortType::PE: return  &PORTE;
+//	case PortType::PF: return  &PORTF;
+//	case PortType::PG: return  &PORTG;
+//	case PortType::PH: return  &PORTH;
+//	case PortType::PJ: return  &PORTJ;
+//	case PortType::PK: return  &PORTK;
+//	case PortType::PL: return  &PORTL;
+//	default: return NOT_A_PORT; // nullptr
+//	}
+//}
 constexpr inline
 volatile uint8_t *port_to_input_PS(PortType port) noexcept {
-	switch(port){
-	case PortType::PA: return  &PINA;
-	case PortType::PB: return  &PINB;
-	case PortType::PC: return  &PINC;
-	case PortType::PD: return  &PIND;
-	case PortType::PE: return  &PINE;
-	case PortType::PF: return  &PINF;
-	case PortType::PG: return  &PING;
-	case PortType::PH: return  &PINH;
-	case PortType::PJ: return  &PINJ;
-	case PortType::PK: return  &PINK;
-	case PortType::PL: return  &PINL;
-	default: return NOT_A_PORT; // nullptr
+	if (port >= PortType::PA && port < PortType::PH) { // ports A to G DDR map to 0x21-0x33 +every 3 bits
+		return reinterpret_cast<volatile uint8_t *>((port-PortType::PA)*3  + 0x20);
+	} else if (port >= PortType::PH && port <= PortType::PL) {
+		return reinterpret_cast<volatile uint8_t *>((port-PortType::PH)*3  + 0x100);//(*(volatile uint8_t *)(0x104));
 	}
+	return NOT_A_PORT; // nullptr
 }
+
+//constexpr inline
+//volatile uint8_t *port_to_input_PS(PortType port) noexcept {
+//	switch(port){
+//	case PortType::PA: return  &PINA;
+//	case PortType::PB: return  &PINB;
+//	case PortType::PC: return  &PINC;
+//	case PortType::PD: return  &PIND;
+//	case PortType::PE: return  &PINE;
+//	case PortType::PF: return  &PINF;
+//	case PortType::PG: return  &PING;
+//	case PortType::PH: return  &PINH;
+//	case PortType::PJ: return  &PINJ;
+//	case PortType::PK: return  &PINK;
+//	case PortType::PL: return  &PINL;
+//	default: return NOT_A_PORT; // nullptr
+//	}
+//}
 #endif
 #ifndef UsePetersCpp17
 #ifdef ARDUINO_MAIN
@@ -308,7 +322,7 @@ const uint8_t PROGMEM digital_pin_to_port_PGM[] = {
 };
 #endif
 #else
-enum class PinType:uint8_t {
+enum PinType:uint8_t {
 	D00, D01, D02, D03, D04, D05, D06, D07,	D08, D09,
 	D10, D11, D12, D13, D14, D15, D16, D17, D18, D19,
 	D20, D21, D22, D23, D24, D25, D26, D27, D28, D29,
@@ -321,40 +335,105 @@ enum class PinType:uint8_t {
 	PWM8=D08, PWM9=D09, PWM10=D10, PWM11=D11, PWM12=D12, PWM13=D13,
 	USART3_TX=D14, USART3_RX=D15, USART2_TX=D16, USART2_RX=D17,
 	USART1_TX=D18, USART1_RX=D19,
-	SPI_MISO=D50, SPI_MOSI=D51, SPI_SCK=D52, SPI_SS=D53,
-	I2C_SDA=D20, I2C_SCL=D21,
+	MISO=D50, MOSI=D51, SCK=D52, SS=D53,
+	SDA=D20, SCL=D21,
 	A0=D54, A1=D55, A2=D56, A3=D57, A4=D58, A5=D59,
 	A6=D60, A7=D61, A8=D62, A9=D63, A10=D64, A11=D65,
-	A12=D66, A13=D67, A14=D68, A15=D69
+	A12=D66, A13=D67, A14=D68, A15=D69,
+	LED_BUILTIN=13
 };
-constexpr inline PortType digital_pin_to_Port_PS(uint8_t pin) noexcept {
-	using PT=PinType;
-	switch(static_cast<PinType>(pin)){
-	case PT::D22: case PT::D23: case PT::D24: case PT::D25: case PT::D26: case PT::D27: case PT::D28: case PT::D29:
-		return PortType::PA;
-	case PT::D10: case PT::D11: case PT::D12: case PT::D13: case PT::D50: case PT::D51: case PT::D52: case PT::D53:
-		return PortType::PB;
-	case PT::D30: case PT::D31: case PT::D32: case PT::D33: case PT::D34: case PT::D35: case PT::D36: case PT::D37:
-		return PortType::PC;
-	case PT::D18: case PT::D19: case PT::D20: case PT::D21: case PT::D38:
-		return PortType::PD;
-	case PT::D00: case PT::D01: case PT::D02: case PT::D03:	case PT::D05:
-		return PortType::PE;
-	case PT::D54: case PT::D55: case PT::D56: case PT::D57: case PT::D58: case PT::D59: case PT::D60: case PT::D61:
-		return PortType::PF;
-	case PT::D04: case PT::D39: case PT::D40: case PT::D41:
-		return PortType::PG;
-	case PT::D06: case PT::D07: case PT::D08: case PT::D09: case PT::D16: case PT::D17:
-		return PortType::PH;
-	case PT::D14: case PT::D15:
-		return PortType::PJ;
-	case PT::D62: case PT::D63: case PT::D64: case PT::D65: case PT::D66: case PT::D67: case PT::D68: case PT::D69:
-		return PortType::PK;
-	case PT::D42: case PT::D43: case PT::D44: case PT::D45: case PT::D46: case PT::D47: case PT::D48: case PT::D49:
-		return PortType::PL;
+namespace detail{
+template<uint8_t thebyte>
+constexpr inline bool isInByte(uint8_t pin){
+	constexpr uint8_t bitstart = thebyte * 8;
+
+	return (pin >=bitstart) && (pin < (bitstart +8));
+}
+
+template <uint8_t thebyte,PinType ...pins>
+constexpr inline uint8_t bytebitmask(){
+	constexpr uint8_t bitstart = thebyte * 8;
+	return ( (static_cast<unsigned int>(isInByte<thebyte>(pins) << ((pins-bitstart) * isInByte<thebyte>(pins))))|...);
+}
+
+template <uint8_t thebyte,PinType ...pins>
+constexpr inline bool isOneOfPinsInByte(uint8_t pin) noexcept {
+	constexpr uint8_t bitstart = thebyte * 8;
+
+	return isInByte<thebyte>(pin)&& ((1ul << pin-bitstart ) & bytebitmask<thebyte,pins...>());
+}
+
+template<uint8_t...allbytes>
+struct isPinInBytesHelper {
+	template <PinType ...pins>
+	static constexpr inline bool isOneOfPins(uint8_t pin) noexcept {
+		return ((isOneOfPinsInByte<allbytes,pins...>(pin)||...));
 	}
+
+};
+}
+
+template <PinType ...pins>
+constexpr inline bool isOneOfPins(uint8_t pin) noexcept {
+	return ((pin == pins)||...);
+
+//	return detail::isPinInBytesHelper<0,1,2,3,4,5,6,7,8,9>::isOneOfPins<pins...>(pin); // maximum of 72 pins on Mega
+}
+
+
+constexpr inline PortType digital_pin_to_Port_PS(uint8_t const pin) noexcept {
+	if (pin >= D22 && pin <= D29)
+		return PortType::PA;
+	if ((pin >= D10 && pin <= D13) || (pin >= D50 && pin <= D53))
+		return PortType::PB;
+	if (pin >= D30 && pin <= D37)
+		return PortType::PC;
+	if ((pin >= D18 && pin <= D21) || pin == D38)
+		return PortType::PD;
+	if (isOneOfPins<D00,D01,D02,D03,D05>(pin))
+		return PortType::PE;
+	if (pin >= D54 && pin <= D61)
+		return PortType::PF;
+	if (pin == D04 || (pin >= D39 && pin <= D41))
+		return PortType::PG;
+	if (isOneOfPins<D06,D07,D08,D09,D16,D17>(pin))
+		return PortType::PH;
+	if (pin == D14 || pin == D15)
+		return PortType::PJ;
+	if (pin >= D62 && pin <= D69)
+		return PortType::PK;
+	if (pin >= D42 && pin <= D49)
+		return PortType::PL;
 	return NO_PORT;
 }
+//constexpr inline PortType digital_pin_to_Port_PS(uint8_t pin) noexcept {
+//	using PT=PinType;
+//	switch(static_cast<PinType>(pin)){
+//	case PT::D22: case PT::D23: case PT::D24: case PT::D25: case PT::D26: case PT::D27: case PT::D28: case PT::D29:
+//		return PortType::PA;
+//	case PT::D10: case PT::D11: case PT::D12: case PT::D13: case PT::D50: case PT::D51: case PT::D52: case PT::D53:
+//		return PortType::PB;
+//	case PT::D30: case PT::D31: case PT::D32: case PT::D33: case PT::D34: case PT::D35: case PT::D36: case PT::D37:
+//		return PortType::PC;
+//	case PT::D18: case PT::D19: case PT::D20: case PT::D21: case PT::D38:
+//		return PortType::PD;
+//	case PT::D00: case PT::D01: case PT::D02: case PT::D03:	case PT::D05:
+//		return PortType::PE;
+//	case PT::D54: case PT::D55: case PT::D56: case PT::D57: case PT::D58: case PT::D59: case PT::D60: case PT::D61:
+//		return PortType::PF;
+//	case PT::D04: case PT::D39: case PT::D40: case PT::D41:
+//		return PortType::PG;
+//	case PT::D06: case PT::D07: case PT::D08: case PT::D09: case PT::D16: case PT::D17:
+//		return PortType::PH;
+//	case PT::D14: case PT::D15:
+//		return PortType::PJ;
+//	case PT::D62: case PT::D63: case PT::D64: case PT::D65: case PT::D66: case PT::D67: case PT::D68: case PT::D69:
+//		return PortType::PK;
+//	case PT::D42: case PT::D43: case PT::D44: case PT::D45: case PT::D46: case PT::D47: case PT::D48: case PT::D49:
+//		return PortType::PL;
+//	}
+//	return NO_PORT;
+//}
 
 #endif
 
@@ -436,35 +515,59 @@ const uint8_t PROGMEM digital_pin_to_bit_mask_PGM[] = {
 };
 #endif
 #else
+
+
 struct bitmask {
 enum  bitmask_in_byte:uint8_t {
 	b0=1,b1=2,b2=4,b3=8,b4=16,b5=32,b6=64,b7=128
 };
 static constexpr inline uint8_t digital_pin_to_BitMask_PS(uint8_t const pin) noexcept {
-	using PT=PinType;
-	switch (static_cast<PinType>(pin)) {
-		case PT::D00: case PT::D15: case PT::D17: case PT::D21: case PT::D22: case PT::D37: case PT::D41: case PT::D49: case PT::D53: case PT::D54: case PT::D62:
-			return bitmask_in_byte::b0;
-		case PT::D01: case PT::D14: case PT::D16: case PT::D20: case PT::D23: case PT::D36: case PT::D40: case PT::D48: case PT::D52: case PT::D55: case PT::D63:
-			return bitmask_in_byte::b1;
-
-		case PT::D19: case PT::D24: case PT::D35: case PT::D39: case PT::D47: case PT::D51: case PT::D56: case PT::D64:
-			return bitmask_in_byte::b2;
-
-		case PT::D05: case PT::D06: case PT::D18: case PT::D25: case PT::D34: case PT::D46: case PT::D50: case PT::D57: case PT::D65:
-			return bitmask_in_byte::b3;
-
-		case PT::D02: case PT::D07: case PT::D10: case PT::D26: case PT::D33: case PT::D45: case PT::D58: case PT::D66:
-			return bitmask_in_byte::b4;
-		case PT::D03: case PT::D04: case PT::D08: case PT::D11: case PT::D27: case PT::D32: case PT::D44: case PT::D59: case PT::D67:
-			return bitmask_in_byte::b5;
-		case PT::D09: case PT::D12: case PT::D28: case PT::D31: case PT::D43: case PT::D60: case PT::D68:
-			return bitmask_in_byte::b6;
-		case PT::D13: case PT::D29: case PT::D30: case PT::D38: case PT::D42: case PT::D61: case PT::D69:
-			return bitmask_in_byte::b7;
-	}
+	if( isOneOfPins<D00,D15,D17,D21,D22,D37,D41,D49,D53,D54,D62>(pin))
+		return bitmask_in_byte::b0;
+	if( isOneOfPins<D01, D14, D16, D20, D23, D36, D40, D48, D52, D55, D63>(pin))
+		return bitmask_in_byte::b1;
+	if( isOneOfPins<D19, D24,D35, D39, D47, D51, D56,D64>(pin))
+		return bitmask_in_byte::b2;
+	if( isOneOfPins<D05, D06, D18, D25, D34, D46, D50, D57, D65>(pin))
+		return bitmask_in_byte::b3;
+	if( isOneOfPins<D02, D07, D10, D26, D33, D45, D58, D66>(pin))
+		return bitmask_in_byte::b4;
+	if( isOneOfPins<D03, D04, D08, D11, D27, D32, D44, D59, D67>(pin))
+		return bitmask_in_byte::b5;
+	if( isOneOfPins<D09, D12, D28, D31, D43, D60, D68>(pin))
+		return bitmask_in_byte::b6;
+	if( isOneOfPins<D13, D29, D30, D38, D42, D61, D69>(pin))
+		return bitmask_in_byte::b7;
 	return 0; // 0 might break code, may be, but would be better indicator.
+
 }
+
+
+//static constexpr inline uint8_t digital_pin_to_BitMask_PS(uint8_t const pin) noexcept {
+//	using PT=PinType;
+//	switch (static_cast<PinType>(pin)) {
+//		case PT::D00: case PT::D15: case PT::D17: case PT::D21: case PT::D22: case PT::D37: case PT::D41: case PT::D49: case PT::D53: case PT::D54: case PT::D62:
+//			return bitmask_in_byte::b0;
+//		case PT::D01: case PT::D14: case PT::D16: case PT::D20: case PT::D23: case PT::D36: case PT::D40: case PT::D48: case PT::D52: case PT::D55: case PT::D63:
+//			return bitmask_in_byte::b1;
+//
+//		case PT::D19: case PT::D24: case PT::D35: case PT::D39: case PT::D47: case PT::D51: case PT::D56: case PT::D64:
+//			return bitmask_in_byte::b2;
+//
+//		case PT::D05: case PT::D06: case PT::D18: case PT::D25: case PT::D34: case PT::D46: case PT::D50: case PT::D57: case PT::D65:
+//			return bitmask_in_byte::b3;
+//
+//		case PT::D02: case PT::D07: case PT::D10: case PT::D26: case PT::D33: case PT::D45: case PT::D58: case PT::D66:
+//			return bitmask_in_byte::b4;
+//		case PT::D03: case PT::D04: case PT::D08: case PT::D11: case PT::D27: case PT::D32: case PT::D44: case PT::D59: case PT::D67:
+//			return bitmask_in_byte::b5;
+//		case PT::D09: case PT::D12: case PT::D28: case PT::D31: case PT::D43: case PT::D60: case PT::D68:
+//			return bitmask_in_byte::b6;
+//		case PT::D13: case PT::D29: case PT::D30: case PT::D38: case PT::D42: case PT::D61: case PT::D69:
+//			return bitmask_in_byte::b7;
+//	}
+//	return 0; // 0 might break code, may be, but would be better indicator.
+//}
 };
 #endif
 #ifndef UsePetersCpp17
@@ -547,43 +650,554 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 
 #endif
 #else
-constexpr inline uint8_t digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+constexpr inline timer_values digital_pin_to_timer_PS(PinType const pin) noexcept {
 	using PT=PinType;
-	switch (static_cast<PinType>(pin)) {
-	case PT::D02:
-		return TIMER3B;
-	case PT::D03:
-		return TIMER3C;
-	case PT::D04:
-		return TIMER0B;
-	case PT::D05:
-		return TIMER3A;
-	case PT::D06:
-		return TIMER4A;
-	case PT::D07:
-		return TIMER4B;
-	case PT::D08:
-		return TIMER4C;
-	case PT::D09:
-		return TIMER2B;
-	case PT::D10:
-		return TIMER2A;
-	case PT::D11:
-		return TIMER1A;
-	case PT::D12:
-		return TIMER1B;
-	case PT::D13:
-		return TIMER0A;
-	case PT::D44:
-		return TIMER5C;
-	case PT::D45:
-		return TIMER5B;
-	case PT::D46:
-		return TIMER5A;
-	default:
-		return NOT_ON_TIMER;
+	constexpr timer_values timermap[] {
+		/* PT::D02 */	 TIMER3B,
+		/* PT::D03 */	 TIMER3C,
+		/* PT::D04 */	 TIMER0B,
+		/* PT::D05 */ TIMER3A,
+		/* PT::D06 */ TIMER4A,
+		/* PT::D07 */ TIMER4B,
+		/* PT::D08 */ TIMER4C,
+		/* PT::D09 */ TIMER2B,
+		/* PT::D10 */ TIMER2A,
+		/* PT::D11 */ TIMER1A,
+		/* PT::D12 */ TIMER1B,
+		/* PT::D13 */ TIMER0A,
+		/* PT::D44 */ TIMER5C,
+		/* PT::D45 */ TIMER5B,
+		/* PT::D46 */ TIMER5A
+	};
+	if (pin>=PT::D02 && pin <= PT::D13){
+		return timermap[pin-PT::D02];
+	} else if (pin >=PT::D44 && pin <= PT::D46){
+		return timermap[pin-PT::D44 + 12];
+	}
+	return NOT_ON_TIMER;
+
+}
+// from wiring_private
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#define CBI_SET
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#define SBI_SET
+#endif
+#if not_very_efficient_attempt
+template<PinType pin>
+inline void analog_pin_to_timer_turnoff() noexcept {
+	using PT=PinType;
+	using funptr=void(*)();
+	constexpr funptr  timer_turnoff_map[] {
+		/* PT::D02 */	[]{cbi(TCCR3A, COM3B1);}, // 0x90 TIMER3B,
+		/* PT::D03 */	[]{cbi(TCCR3A, COM3C1);}, // 0x90 TIMER3C,
+		/* PT::D04 */	[]{cbi(TCCR0A, COM0B1);}, // 0x24 TIMER0B,
+		/* PT::D05 */   []{cbi(TCCR3A, COM3A1);}, // 0x90 TIMER3A,
+		/* PT::D06 */   []{cbi(TCCR4A, COM4A1);}, // 0xC0 TIMER4A,
+		/* PT::D07 */   []{cbi(TCCR4A, COM4B1);}, // 0xC0 TIMER4B,
+		/* PT::D08 */   []{cbi(TCCR4A, COM4C1);}, // 0xC0 TIMER4C,
+		/* PT::D09 */   []{cbi(TCCR2A, COM2B1);},// 0xB0 TIMER2B,
+		/* PT::D10 */   []{cbi(TCCR2A, COM2A1);},// 0xB0 TIMER2A,
+		/* PT::D11 */   []{cbi(TCCR1A, COM1A1);}, // 0x80 TIMER1A,
+		/* PT::D12 */   []{cbi(TCCR1A, COM1B1);}, // 0x80 TIMER1B,
+		/* PT::D13 */   []{cbi(TCCR0A, COM0A1);}, // 0x24 TIMER0A,
+		/* PT::D44 */   []{cbi(TCCR5A, COM5C1);},// 0x120 TIMER5C,
+		/* PT::D45 */   []{cbi(TCCR5A, COM5B1);},// 0x120 TIMER5B,
+		/* PT::D46 */   []{cbi(TCCR5A, COM5A1);}  // 0x120 TIMER5A
+	};
+	if (pin>=PT::D02 && pin <= PT::D13){
+		timer_turnoff_map[pin-PT::D02]();
+	} else if (pin >=PT::D44 && pin <= PT::D46){
+		timer_turnoff_map[pin-PT::D44 + 12]();
 	}
 }
+
+inline void analog_pin_to_timer_turnoff(PinType const pin) noexcept {
+	using PT=PinType;
+	using funptr=void(*)();
+	constexpr funptr  timer_turnoff_map[] {
+		/* PT::D02 */	[]{cbi(TCCR3A, COM3B1);}, // 0x90 TIMER3B,
+		/* PT::D03 */	[]{cbi(TCCR3A, COM3C1);}, // 0x90 TIMER3C,
+		/* PT::D04 */	[]{cbi(TCCR0A, COM0B1);}, // 0x24 TIMER0B,
+		/* PT::D05 */   []{cbi(TCCR3A, COM3A1);}, // 0x90 TIMER3A,
+		/* PT::D06 */   []{cbi(TCCR4A, COM4A1);}, // 0xC0 TIMER4A,
+		/* PT::D07 */   []{cbi(TCCR4A, COM4B1);}, // 0xC0 TIMER4B,
+		/* PT::D08 */   []{cbi(TCCR4A, COM4C1);}, // 0xC0 TIMER4C,
+		/* PT::D09 */   []{cbi(TCCR2A, COM2B1);},// 0xB0 TIMER2B,
+		/* PT::D10 */   []{cbi(TCCR2A, COM2A1);},// 0xB0 TIMER2A,
+		/* PT::D11 */   []{cbi(TCCR1A, COM1A1);}, // 0x80 TIMER1A,
+		/* PT::D12 */   []{cbi(TCCR1A, COM1B1);}, // 0x80 TIMER1B,
+		/* PT::D13 */   []{cbi(TCCR0A, COM0A1);}, // 0x24 TIMER0A,
+		/* PT::D44 */   []{cbi(TCCR5A, COM5C1);},// 0x120 TIMER5C,
+		/* PT::D45 */   []{cbi(TCCR5A, COM5B1);},// 0x120 TIMER5B,
+		/* PT::D46 */   []{cbi(TCCR5A, COM5A1);}  // 0x120 TIMER5A
+	};
+	if (pin>=PT::D02 && pin <= PT::D13){
+		timer_turnoff_map[pin-PT::D02]();
+	} else if (pin >=PT::D44 && pin <= PT::D46){
+		timer_turnoff_map[pin-PT::D44 + 12]();
+	}
+}
+
+
+inline void analog_pin_to_timer_prepare(uint8_t const pin) noexcept {
+	using PT=PinType;
+	using funptr=void(*)();
+	constexpr funptr  timer_prepare_map[] {
+		/* PT::D02 */	[]{sbi(TCCR3A, COM3B1);}, // 0x90 TIMER3B,
+		/* PT::D03 */	[]{sbi(TCCR3A, COM3C1);}, // 0x90 TIMER3C,
+		/* PT::D04 */	[]{sbi(TCCR0A, COM0B1);}, // 0x24 TIMER0B,
+		/* PT::D05 */   []{sbi(TCCR3A, COM3A1);}, // 0x90 TIMER3A,
+		/* PT::D06 */   []{sbi(TCCR4A, COM4A1);
+		#if defined(COM4A0)
+						   cbi(TCCR4A, COM4A0);
+		#endif
+		}, // 0xC0 TIMER4A,
+		/* PT::D07 */   []{sbi(TCCR4A, COM4B1);}, // 0xC0 TIMER4B,
+		/* PT::D08 */   []{sbi(TCCR4A, COM4C1);}, // 0xC0 TIMER4C,
+		/* PT::D09 */   []{sbi(TCCR2A, COM2B1);},// 0xB0 TIMER2B,
+		/* PT::D10 */   []{sbi(TCCR2A, COM2A1);},// 0xB0 TIMER2A,
+		/* PT::D11 */   []{sbi(TCCR1A, COM1A1);}, // 0x80 TIMER1A,
+		/* PT::D12 */   []{sbi(TCCR1A, COM1B1);}, // 0x80 TIMER1B,
+		/* PT::D13 */   []{sbi(TCCR0A, COM0A1);}, // 0x24 TIMER0A,
+		/* PT::D44 */   []{sbi(TCCR5A, COM5C1);},// 0x120 TIMER5C,
+		/* PT::D45 */   []{sbi(TCCR5A, COM5B1);},// 0x120 TIMER5B,
+		/* PT::D46 */   []{sbi(TCCR5A, COM5A1);}  // 0x120 TIMER5A
+	};
+	if (pin>=PT::D02 && pin <= PT::D13){
+		timer_prepare_map[pin-PT::D02]();
+	} else if (pin >=PT::D44 && pin <= PT::D46){
+		timer_prepare_map[pin-PT::D44 + 12]();
+	}
+}
+constexpr
+inline void analog_pin_to_timer_assign(uint8_t const pin,int val) noexcept {
+	using PT=PinType;
+	using funptr=void(*)(int);
+	constexpr funptr  timer_assign_map[] { // using lambdas to deal with different types of OCR registers (8vs16 bit)
+		/* PT::D02 */	[](int val){OCR3B = val; }, // 0x90 TIMER3B,
+		/* PT::D03 */	[](int val){OCR3C = val; }, // 0x90 TIMER3C,
+		/* PT::D04 */	[](int val){OCR0B = val; }, // 0x24 TIMER0B,
+		/* PT::D05 */   [](int val){OCR3A = val; }, // 0x90 TIMER3A,
+		/* PT::D06 */   [](int val){OCR4A = val; }, // 0xC0 TIMER4A,
+		/* PT::D07 */   [](int val){OCR4B = val; }, // 0xC0 TIMER4B,
+		/* PT::D08 */   [](int val){OCR4C = val; }, // 0xC0 TIMER4C,
+		/* PT::D09 */   [](int val){OCR2B = val; },// 0xB0 TIMER2B,
+		/* PT::D10 */   [](int val){OCR2A = val; },// 0xB0 TIMER2A,
+		/* PT::D11 */   [](int val){OCR1A = val; }, // 0x80 TIMER1A,
+		/* PT::D12 */   [](int val){OCR1B = val; }, // 0x80 TIMER1B,
+		/* PT::D13 */   [](int val){OCR0A = val; }, // 0x24 TIMER0A,
+		/* PT::D44 */   [](int val){OCR5C = val; },// 0x120 TIMER5C,
+		/* PT::D45 */   [](int val){OCR5B = val; },// 0x120 TIMER5B,
+		/* PT::D46 */   [](int val){OCR5A = val; }  // 0x120 TIMER5A
+	};
+	if (pin>=PT::D02 && pin <= PT::D13){
+		timer_assign_map[pin-PT::D02](val);
+	} else if (pin >=PT::D44 && pin <= PT::D46){
+		timer_assign_map[pin-PT::D44 + 12](val);
+	}
+}
+#endif
+
+template <uint8_t pin, uint8_t val>
+void digitalWrite();
+
+#include "pwm_timer_handling.h"
+// template variations/non-argument overloads in pwm_timer_handling
+
+inline void analog_timer_turnoff(timer_values const theTimer) noexcept {
+	switch (theTimer) {
+	case TIMER0A: analog_timer_turnoff<TIMER0A>(); break;
+	case TIMER0B: analog_timer_turnoff<TIMER0B>(); break;
+	case TIMER1A: analog_timer_turnoff<TIMER1A>(); break;
+	case TIMER1B: analog_timer_turnoff<TIMER1B>(); break;
+	case TIMER1C: analog_timer_turnoff<TIMER1C>(); break;
+	case TIMER2A: analog_timer_turnoff<TIMER2A>(); break;
+	case TIMER2B: analog_timer_turnoff<TIMER2B>(); break;
+	case TIMER3A: analog_timer_turnoff<TIMER3A>(); break;
+	case TIMER3B: analog_timer_turnoff<TIMER3B>(); break;
+	case TIMER3C: analog_timer_turnoff<TIMER3C>(); break;
+	case TIMER4A: analog_timer_turnoff<TIMER4A>(); break;
+	case TIMER4B: analog_timer_turnoff<TIMER4B>(); break;
+	case TIMER4C: analog_timer_turnoff<TIMER4C>(); break;
+	case TIMER5A: analog_timer_turnoff<TIMER5A>(); break;
+	case TIMER5B: analog_timer_turnoff<TIMER5B>(); break;
+	case TIMER5C: analog_timer_turnoff<TIMER5C>(); break;
+	default:;
+	}
+}
+inline void analog_pin_to_timer_turnoff(PinType const pin) noexcept {
+	auto const theTimer = digital_pin_to_timer_PS(pin);
+	analog_timer_turnoff(theTimer); // this way hope for better constant folding and inlining
+}
+inline void setPWMValue(timer_values const theTimer, int val) noexcept {
+	switch (theTimer) {
+	case TIMER0A: setPWMValue<TIMER0A>(val); break;
+	case TIMER0B: setPWMValue<TIMER0B>(val); break;
+	case TIMER1A: setPWMValue<TIMER1A>(val); break;
+	case TIMER1B: setPWMValue<TIMER1B>(val); break;
+	case TIMER1C: setPWMValue<TIMER1C>(val); break;
+	case TIMER2A: setPWMValue<TIMER2A>(val); break;
+	case TIMER2B: setPWMValue<TIMER2B>(val); break;
+	case TIMER3A: setPWMValue<TIMER3A>(val); break;
+	case TIMER3B: setPWMValue<TIMER3B>(val); break;
+	case TIMER3C: setPWMValue<TIMER3C>(val); break;
+	case TIMER4A: setPWMValue<TIMER4A>(val); break;
+	case TIMER4B: setPWMValue<TIMER4B>(val); break;
+	case TIMER4C: setPWMValue<TIMER4C>(val); break;
+	case TIMER5A: setPWMValue<TIMER5A>(val); break;
+	case TIMER5B: setPWMValue<TIMER5B>(val); break;
+	case TIMER5C: setPWMValue<TIMER5C>(val); break;
+	default:;
+	}
+}
+
+// no need for further constant folding? try it anyway
+template <uint8_t pin,uint8_t  mode>
+inline
+void pinMode()
+{
+	constexpr uint8_t const bit = digitalPinToBitMask(pin);
+	constexpr PortType const port = digitalPinToPort(pin);
+
+
+	if constexpr (port == NO_PORT) return;
+
+	 volatile uint8_t * const reg = portModeRegister(port);
+	 volatile uint8_t * const out = portOutputRegister(port);
+	if constexpr (mode == INPUT) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out &= ~bit;
+	} else if constexpr (mode == INPUT_PULLUP) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out |= bit;
+	} else {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg |= bit;
+	}
+}
+
+template <uint8_t pin>
+inline
+void pinMode(uint8_t const mode)
+{
+	constexpr uint8_t const bit = digitalPinToBitMask(pin);
+	constexpr PortType const port = digitalPinToPort(pin);
+
+
+	if constexpr (port == NO_PORT) return;
+
+	 volatile uint8_t *  reg = portModeRegister(port);
+	 volatile uint8_t *  out = portOutputRegister(port);
+	if (mode == INPUT) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out &= ~bit;
+	} else if (mode == INPUT_PULLUP) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out |= bit;
+	} else {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg |= bit;
+	}
+}
+
+inline
+void pinMode(uint8_t const pin, uint8_t const mode)
+{
+	uint8_t const bit = digitalPinToBitMask(pin);
+	PortType const port = digitalPinToPort(pin);
+
+
+	if (port == NO_PORT) return;
+
+	volatile uint8_t * const reg = portModeRegister(port);
+	volatile uint8_t * const out = portOutputRegister(port);
+	if (mode == INPUT) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out &= ~bit;
+	} else if (mode == INPUT_PULLUP) {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg &= ~bit;
+		*out |= bit;
+	} else {
+		SafeStatusRegisterAndClearInterrupt safe;
+		*reg |= bit;
+	}
+}
+inline
+void digitalWrite(uint8_t const pin, uint8_t const val)
+{
+	auto const timer = digitalPinToTimer(static_cast<PinType>(pin));
+	auto const port = digital_pin_to_Port_PS(static_cast<PinType>(pin));
+	auto const bit = bitmask::digital_pin_to_BitMask_PS(static_cast<PinType>(pin));
+
+	if (port == NO_PORT) return; // should use the enum...
+
+	// If the pin that support PWM output, we need to turn it off
+	// before doing a digital write.
+	if (timer != NOT_ON_TIMER) analog_timer_turnoff(timer);
+
+	volatile uint8_t * const out = portOutputRegister(port);
+
+	SafeStatusRegisterAndClearInterrupt safe;
+	if (val == LOW) {
+		*out &= ~bit;
+	} else {
+		*out |= bit;
+	}
+}
+
+template<uint8_t L_H>
+inline
+void digitalWrite_LH(uint8_t const pin)
+{
+	auto const timer = digitalPinToTimer(PinType(pin));
+	auto const port = digital_pin_to_Port_PS(pin);
+	auto const bit = bitmask::digital_pin_to_BitMask_PS(pin);
+
+	if (port == NO_PORT) return; // should use the enum...
+
+	// If the pin that support PWM output, we need to turn it off
+	// before doing a digital write.
+	if (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff(PinType(pin));
+
+	volatile uint8_t * const out = portOutputRegister(port);
+
+	SafeStatusRegisterAndClearInterrupt safe;
+	if constexpr (L_H == LOW) {
+		*out &= ~bit;
+	} else {
+		*out |= bit;
+	}
+}
+
+
+
+template <uint8_t pin>
+inline
+void digitalWrite(uint8_t const val)
+{
+	constexpr uint8_t const timer = digitalPinToTimer(PinType(pin));
+	constexpr auto port = digital_pin_to_Port_PS(pin);
+	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
+
+	if constexpr (port == NO_PORT) return; // should use the enum...
+
+	// If the pin that support PWM output, we need to turn it off
+	// before doing a digital write.
+	if constexpr (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff<PinType(pin)>();
+
+	volatile uint8_t * const out = portOutputRegister(port);
+
+	SafeStatusRegisterAndClearInterrupt safe;
+	if (val == LOW) {
+		*out &= ~bit;
+	} else {
+		*out |= bit;
+	}
+}
+template <uint8_t pin, uint8_t val>
+void digitalWrite()
+{
+	constexpr auto const timer = digitalPinToTimer(PinType(pin));
+	constexpr auto port = digital_pin_to_Port_PS(pin);
+	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
+
+	if constexpr (port == NO_PORT) return; // should use the enum...
+
+	// If the pin that support PWM output, we need to turn it off
+	// before doing a digital write.
+	if constexpr (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff<PinType(pin)>();
+
+	volatile uint8_t * const out = portOutputRegister(port);
+
+	SafeStatusRegisterAndClearInterrupt safe;
+	if constexpr (val == LOW) {
+		*out &= ~bit;
+	} else {
+		*out |= bit;
+	}
+}
+template <uint8_t pin>
+inline
+int digitalRead()
+{
+	constexpr auto timer = digitalPinToTimer(PinType(pin));
+	constexpr uint8_t bit = digitalPinToBitMask(pin);
+	constexpr PortType port = digitalPinToPort(pin);
+
+	if constexpr (port == NO_PORT) return LOW;
+
+	// If the pin that support PWM output, we need to turn it off
+	// before getting a digital reading.
+	if constexpr (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff<PinType(pin)>();
+
+	if (*portInputRegister(port) & bit) return HIGH;
+	return LOW;
+}
+inline
+int digitalRead(uint8_t const pin)
+{
+	auto const timer = digitalPinToTimer(PinType(pin));
+	uint8_t const bit = digitalPinToBitMask(pin);
+	PortType const port = digitalPinToPort(pin);
+
+	if (port == NO_PORT) return LOW;
+
+	// If the pin that support PWM output, we need to turn it off
+	// before getting a digital reading.
+	if (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff(PinType(pin));
+
+	if (*portInputRegister(port) & bit) return HIGH;
+	return LOW;
+}
+namespace analog{
+inline uint8_t analog_reference = DEFAULT;
+
+inline
+void analogReference(uint8_t mode)
+{
+	// can't actually set the register here because the default setting
+	// will connect AVCC and the AREF pin, which would cause a short if
+	// there's something connected to AREF.
+	analog_reference = mode;
+}
+}
+inline
+int analogRead(uint8_t pin)
+{
+	using ::analog::analog_reference;
+
+#if defined(analogPinToChannel)
+#if defined(__AVR_ATmega32U4__)
+	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
+#endif
+	pin = analogPinToChannel(pin);
+#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+	if (pin >= 54) pin -= 54; // allow for channel or pin numbers
+#elif defined(__AVR_ATmega32U4__)
+	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
+#elif defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
+	if (pin >= 24) pin -= 24; // allow for channel or pin numbers
+#else
+	if (pin >= 14) pin -= 14; // allow for channel or pin numbers
+#endif
+
+#if defined(ADCSRB) && defined(MUX5)
+	// the MUX5 bit of ADCSRB selects whether we're reading from channels
+	// 0 to 7 (MUX5 low) or 8 to 15 (MUX5 high).
+	ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
+#endif
+
+	// set the analog reference (high two bits of ADMUX) and select the
+	// channel (low 4 bits).  this also sets ADLAR (left-adjust result)
+	// to 0 (the default).
+#if defined(ADMUX)
+#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+	ADMUX = (analog_reference << 4) | (pin & 0x07);
+#else
+	ADMUX = (analog_reference << 6) | (pin & 0x07);
+#endif
+#endif
+
+	// without a delay, we seem to read from the wrong channel
+	//delay(1);
+
+#if defined(ADCSRA) && defined(ADCL)
+	// start the conversion
+	sbi(ADCSRA, ADSC);
+
+	// ADSC is cleared when the conversion finishes
+	while (bit_is_set(ADCSRA, ADSC));
+
+	// we have to read ADCL first; doing so locks both ADCL
+	// and ADCH until ADCH is read.  reading ADCL second would
+	// cause the results of each conversion to be discarded,
+	// as ADCL and ADCH would be locked when it completed.
+	uint8_t const low  = ADCL;
+	uint8_t const high = ADCH;
+	return (high << 8) | low;
+#else
+	// we dont have an ADC,
+	return 0;
+#endif
+}
+
+template<uint8_t pin>
+inline
+void analogWrite(int const val)
+{
+	// We need to make sure the PWM output is enabled for those pins
+	// that support it, as we turn it off when digitally reading or
+	// writing with them.  Also, make sure the pin is in output mode
+	// for consistenty with Wiring, which doesn't require a pinMode
+	// call for the analog output pins.
+	pinMode<pin,OUTPUT>();
+	constexpr auto const timer = digital_pin_to_timer_PS(PinType(pin)); // compile time
+	// assume compiler optimizes better
+	if (val == 0 || (timer == NOT_ON_TIMER && val < 128))
+	{
+		digitalWrite<pin,LOW>();
+	}
+	else if (val == 255 || (timer == NOT_ON_TIMER && val >= 128))
+	{
+		digitalWrite<pin,HIGH>();
+	}
+	else
+	{
+		setPWMValue<timer>(val);
+	}
+}
+inline
+void analogWrite(uint8_t const pin, int const val)
+{
+	// We need to make sure the PWM output is enabled for those pins
+	// that support it, as we turn it off when digitally reading or
+	// writing with them.  Also, make sure the pin is in output mode
+	// for consistenty with Wiring, which doesn't require a pinMode
+	// call for the analog output pins.
+	pinMode(pin, OUTPUT);
+	if (val == 0)
+	{
+		digitalWrite(pin,LOW);
+	}
+	else if (val == 255)
+	{
+		digitalWrite(pin,HIGH);
+	}
+	else
+	{
+		auto const timer = digital_pin_to_timer_PS(PinType(pin));
+		if (timer != NOT_ON_TIMER){
+			setPWMValue(timer,val);
+		} else { // not on a timer
+			if (val < 128) {
+				digitalWrite(pin,LOW);
+			} else {
+				digitalWrite(pin,HIGH);
+			}
+
+		}
+	}
+}
+
+#ifdef CBI_SET
+#undef CBI_SET
+#undef cbi
+#endif
+#ifdef SBI_SET
+#undef SBI_SET
+#undef sbi
+#endif
+
 #endif
 
 // These serial port names are intended to allow libraries and architecture-neutral

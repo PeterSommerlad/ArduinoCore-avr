@@ -27,11 +27,14 @@
 #include "pins_arduino.h"
 
 
-
-void pinMode(uint8_t pin, uint8_t mode)
+#ifdef UsePetersCpp17
+void pinMode_ORI(uint8_t const pin, uint8_t const mode)
+#else
+void pinMode(uint8_t const pin, uint8_t const mode)
+#endif
 {
-	uint8_t bit = digitalPinToBitMask(pin);
-	PortType port = digitalPinToPort(pin);
+	uint8_t const bit = digitalPinToBitMask(pin);
+	auto const port = digitalPinToPort(pin);
 
 
 	if (port == NO_PORT) return;
@@ -149,12 +152,17 @@ static void turnOffPWM(uint8_t timer)
 		#endif
 	}
 }
-
+#ifdef UsePetersCpp17
+void digitalWrite_ORI(uint8_t pin, uint8_t val)
+{
+	auto const timer = digitalPinToTimer(PinType(pin));
+#else
 void digitalWrite(uint8_t pin, uint8_t val)
 {
-	uint8_t timer = digitalPinToTimer(pin);
-	uint8_t bit = digitalPinToBitMask(pin);
-	PortType port = digitalPinToPort(pin);
+	uint8_t const timer = digitalPinToTimer(pin);
+#endif
+	uint8_t const bit = digitalPinToBitMask(pin);
+	PortType const port = digitalPinToPort(pin);
 
 	if (port == NO_PORT) return; // should use the enum...
 
@@ -162,10 +170,10 @@ void digitalWrite(uint8_t pin, uint8_t val)
 	// before doing a digital write.
 	if (timer != NOT_ON_TIMER) turnOffPWM(timer);
 
-	volatile uint8_t *out = portOutputRegister(port);
+	volatile uint8_t * const out = portOutputRegister(port);
 
 #ifdef UsePetersCpp17
-	SafeStatusRegisterAndClearInterrupt safe;
+	SafeStatusRegisterAndClearInterrupt safe { };
 #else
 	uint8_t oldSREG = SREG;
 	cli();
@@ -181,11 +189,17 @@ void digitalWrite(uint8_t pin, uint8_t val)
 #endif
 }
 
+#ifdef UsePetersCpp17
+int digitalRead_ORI(PinType pin)
+{
+	auto const timer = digitalPinToTimer(pin);
+#else
 int digitalRead(uint8_t pin)
 {
-	uint8_t timer = digitalPinToTimer(pin);
-	uint8_t bit = digitalPinToBitMask(pin);
-	PortType port = digitalPinToPort(pin);
+	uint8_t const timer = digitalPinToTimer(pin);
+#endif
+	uint8_t const bit = digitalPinToBitMask(pin);
+	PortType const port = digitalPinToPort(pin);
 
 	if (port == NO_PORT) return LOW;
 

@@ -343,9 +343,11 @@ void loop(void);
 #define NOT_A_PORT nullptr
 
 // for use in wiring etc., already similar in USBCore, but with extras
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 struct SafeStatusRegisterAndClearInterrupt{
 	uint8_t oldSREG;
-	SafeStatusRegisterAndClearInterrupt()
+	[[nodiscard]] SafeStatusRegisterAndClearInterrupt() // attribute only officially in C++20
 	:oldSREG{SREG} {
 		cli();
 	}
@@ -353,6 +355,7 @@ struct SafeStatusRegisterAndClearInterrupt{
 		SREG = oldSREG;
 	}
 };
+#pragma GCC diagnostic pop
 
 
 #else

@@ -97,17 +97,18 @@
 #define RXLED0			PORTB |= (1<<0)
 #define RXLED1			PORTB &= ~(1<<0)
 
+
+
+// Map SPI port to 'new' pins D14..D17
+
+// Mapping of analog pins as digital I/O
+// A6-A11 share with digital pins
+#ifndef UsePetersCpp17
 #define PIN_WIRE_SDA         (2)
 #define PIN_WIRE_SCL         (3)
 
 constexpr inline uint8_t SDA = PIN_WIRE_SDA;
 constexpr inline uint8_t SCL = PIN_WIRE_SCL;
-
-#define LED_BUILTIN 13
-#define LED_BUILTIN_RX 17
-#define LED_BUILTIN_TX 30
-
-// Map SPI port to 'new' pins D14..D17
 #define PIN_SPI_SS    (17)
 #define PIN_SPI_MOSI  (16)
 #define PIN_SPI_MISO  (14)
@@ -117,9 +118,9 @@ constexpr inline uint8_t SS   = PIN_SPI_SS;
 constexpr inline uint8_t MOSI = PIN_SPI_MOSI;
 constexpr inline uint8_t MISO = PIN_SPI_MISO;
 constexpr inline uint8_t SCK  = PIN_SPI_SCK;
-
-// Mapping of analog pins as digital I/O
-// A6-A11 share with digital pins
+#define LED_BUILTIN 13
+#define LED_BUILTIN_RX 17
+#define LED_BUILTIN_TX 30
 #define PIN_A0   (18)
 #define PIN_A1   (19)
 #define PIN_A2   (20)
@@ -146,6 +147,7 @@ constexpr inline uint8_t A8 = PIN_A8;	// D8
 constexpr inline uint8_t A9 = PIN_A9;	// D9
 constexpr inline uint8_t A10 = PIN_A10;	// D10
 constexpr inline uint8_t A11 = PIN_A11;	// D12
+#endif
 
 #define digitalPinToPCICR(p)    ((((p) >= 8 && (p) <= 11) || ((p) >= 14 && (p) <= 17) || ((p) >= A8 && (p) <= A10)) ? (&PCICR) : ((uint8_t *)0))
 #define digitalPinToPCICRbit(p) 0
@@ -153,6 +155,7 @@ constexpr inline uint8_t A11 = PIN_A11;	// D12
 #define digitalPinToPCMSKbit(p) ( ((p) >= 8 && (p) <= 11) ? (p) - 4 : ((p) == 14 ? 3 : ((p) == 15 ? 1 : ((p) == 16 ? 2 : ((p) == 17 ? 0 : (p - A8 + 4))))))
 
 //	__AVR_ATmega32U4__ has an unusual mapping of pins to channels
+// PS: must remain a macro, because check is made in wiring_analog.c
 #ifdef UsePetersCpp17
 #define analogPinToChannel(P) analog_pin_to_channel_PS(P)
 #else
@@ -262,7 +265,7 @@ constexpr inline
 volatile uint8_t *port_to_mode_PS(PortType port) noexcept {
 	switch(port){
 	case PortType::PB: return  &DDRB;
-	case PortType::PC: return &DDRC;
+	case PortType::PC: return  &DDRC;
 	case PortType::PD: return  &DDRD;
 	case PortType::PE: return  &DDRE;
 	case PortType::PF: return  &DDRF;
@@ -339,10 +342,20 @@ const uint8_t PROGMEM digital_pin_to_port_PGM[] = {
 #else
 enum PinType:uint8_t {
 	D00, D01, D02, D03, D04, D05, D06, D07, D08, D09, D10, D11, D12, D13, D14, D15,
-	D16, D17, D18, D19, D20, D21, D22, D23, D24, D25, D26, D27, D28, D29, D30
+	D16, D17, D18, D19, D20, D21, D22, D23, D24, D25, D26, D27, D28, D29, D30,
+	A0=D18, A1=D19, A2=D20, A3=D21, A4=D22, A5=D23, A6=D04, A7=D06, A8=D08, A9=D09, A10=D10, A11=D12,
+	MISO=D14, SCK=D15, MOSI=D16, SS=D17, TXLED=D30, RXLED=D17,
+	LED_BUILTIN=D13, LED_BUILTIN_RX=D17, LED_BUILTIN_TX=D30,
+	SDA=D02,SCL=D03
+
 };
+template <PinType ...pins>
+constexpr inline bool isOneOfPins(uint8_t pin) noexcept {
+	return (1UL << pin) & ((1UL << pins)|...);
+}
 
 constexpr inline PortType digital_pin_to_Port_PS(uint8_t pin) noexcept {
+	// check if this also benefits from using if instead of switch
 	switch(static_cast<PinType>(pin)){
 	case D08: case D09: case D10: case D11: case D14: case D15: case D16: case D17: case D26: case D27: case D28:
 		return PortType::PB;
@@ -404,25 +417,42 @@ enum  bitmask_in_byte:uint8_t {
 	b0=1,b1=2,b2=4,b3=8,b4=16,b5=32,b6=64,b7=128
 };
 static constexpr inline uint8_t digital_pin_to_BitMask_PS(uint8_t const pin) noexcept {
-	switch (static_cast<PinType>(pin)) {
-	case D03:	case D17:	case D23:
+	if (isOneOfPins<D03,D17,D23>(pin))
 		return bitmask_in_byte::b0;
-	case D02:	case D15:	case D22:
+	if (isOneOfPins<D02,D15,D22>(pin))
 		return bitmask_in_byte::b1;
-	case D00:	case D16:
+	if (isOneOfPins<D00,D16>(pin))
 		return bitmask_in_byte::b2;
-	case D01:	case D14:
+	if (isOneOfPins<D01,D14>(pin))
 		return bitmask_in_byte::b3;
-	case D04:	case D08:	case D21:	case D24:	case D26:
+	if (isOneOfPins<D04,D08,D21,D24,D26>(pin))
 		return bitmask_in_byte::b4;
-	case D09:	case D20:	case D27:	case D30:
+	if (isOneOfPins<D09,D20,D27,D30>(pin))
 		return bitmask_in_byte::b5;
-	case D05:	case D07:	case D10:	case D12:	case D19:	case D28:	case D29:
+	if (isOneOfPins<D05,D07,D10,D12,D19,D28,D29>(pin))
 		return bitmask_in_byte::b6;
-	case D06:	case D11:	case D13:	case D18:	case D25:
+	if (isOneOfPins<D06,D11,D13,D18,D25>(pin))
 		return bitmask_in_byte::b7;
-	}
-	return 0; // 0 might break code, may be, but would be better indicator.
+// switch statement generates table in .data (section .rodata mapped to RAM, unfortunately)
+//	switch (static_cast<PinType>(pin)) {
+//	case D03:	case D17:	case D23:
+//		return bitmask_in_byte::b0;
+//	case D02:	case D15:	case D22:
+//		return bitmask_in_byte::b1;
+//	case D00:	case D16:
+//		return bitmask_in_byte::b2;
+//	case D01:	case D14:
+//		return bitmask_in_byte::b3;
+//	case D04:	case D08:	case D21:	case D24:	case D26:
+//		return bitmask_in_byte::b4;
+//	case D09:	case D20:	case D27:	case D30:
+//		return bitmask_in_byte::b5;
+//	case D05:	case D07:	case D10:	case D12:	case D19:	case D28:	case D29:
+//		return bitmask_in_byte::b6;
+//	case D06:	case D11:	case D13:	case D18:	case D25:
+//		return bitmask_in_byte::b7;
+//	}
+	return 0; // 0 might break code, may be, but is better error indicator.
 }
 };
 #endif
@@ -467,26 +497,49 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 };
 #endif
 #else
-constexpr inline uint8_t digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+constexpr inline timer_values digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+	// might need different approach than switch, because of RAM usage of section .rodata
 	switch (static_cast<PinType>(pin)) {
 	case D03:
-		return TIMER0B;//,		/* 3 */
+		return TIMER0B;//,		/* 3 */ -> 2
 	case D05:
-		return TIMER3A;//,		/* 5 */
+		return TIMER3A;//,		/* 5 */ -> 9
 	case D06:
-		return TIMER4D;//,		/* 6 */
+		return TIMER4D;//,		/* 6 */ ->15
 	case D09:
-		return TIMER1A;//,		/* 9 */
+		return TIMER1A;//,		/* 9 */ ->3
 	case D10:
-		return TIMER1B;//,		/* 10 */
+		return TIMER1B;//,		/* 10 */->4
 	case D11:
-		return TIMER0A;//,		/* 11 */
+		return TIMER0A;//,		/* 11 */->1
 	case D13:
-		return TIMER4A;//,		/* 13 */
+		return TIMER4A;//,		/* 13 */->12
 	default:
 		return NOT_ON_TIMER;
 	}
 }
+constexpr
+inline volatile uint8_t * digital_pin_to_timer_tccr(uint8_t const pin) noexcept {
+	switch (static_cast<PinType>(pin)) {
+	case D03:
+		return &TCCR0B;//,		/* 3 */ -> 2
+	case D05:
+		return &TCCR3A;//,		/* 5 */ -> 9
+	case D06:
+		return &TCCR4C;//,TIMER4D !		/* 6 */ ->15
+	case D09:
+		return &TCCR1A;//,		/* 9 */ ->3
+	case D10:
+		return &TCCR1A;//,TIMER1B		/* 10 */->4
+	case D11:
+		return &TCCR0A;//,		/* 11 */->1
+	case D13:
+		return &TCCR0A;//,		/* 13 */->12
+	default:
+		return nullptr;
+	}
+}
+
 #endif
 #ifndef UsePetersCpp17
 #ifdef ARDUINO_MAIN
