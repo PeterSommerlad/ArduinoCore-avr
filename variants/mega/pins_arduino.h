@@ -179,6 +179,8 @@ enum  PortType: uint8_t {
 	No_Port=0, PA=1, PB=2, PC=3, PD=4, PE=5, PF=6, PG=7, PH=8, PJ=9, PK=10, PL=11 // contiguous port numbers make code simpler
 };
 #define NO_PORT PortType::No_Port
+
+// need to check if these are really computed at compile time. Otherwise need to return uint16_t and to the cast at usage site
 constexpr inline
 volatile uint8_t *port_to_mode_PS(PortType port) noexcept {
 
@@ -199,23 +201,6 @@ volatile uint8_t *port_to_output_PS(PortType port) noexcept {
 	}
 	return NOT_A_PORT; // nullptr
 }
-//constexpr inline
-//volatile uint8_t *port_to_output_PS(PortType port) noexcept {
-//	switch(port){
-//	case PortType::PA: return  &PORTA;
-//	case PortType::PB: return  &PORTB;
-//	case PortType::PC: return  &PORTC;
-//	case PortType::PD: return  &PORTD;
-//	case PortType::PE: return  &PORTE;
-//	case PortType::PF: return  &PORTF;
-//	case PortType::PG: return  &PORTG;
-//	case PortType::PH: return  &PORTH;
-//	case PortType::PJ: return  &PORTJ;
-//	case PortType::PK: return  &PORTK;
-//	case PortType::PL: return  &PORTL;
-//	default: return NOT_A_PORT; // nullptr
-//	}
-//}
 constexpr inline
 volatile uint8_t *port_to_input_PS(PortType port) noexcept {
 	if (port >= PortType::PA && port < PortType::PH) { // ports A to G DDR map to 0x21-0x33 +every 3 bits
@@ -225,24 +210,6 @@ volatile uint8_t *port_to_input_PS(PortType port) noexcept {
 	}
 	return NOT_A_PORT; // nullptr
 }
-
-//constexpr inline
-//volatile uint8_t *port_to_input_PS(PortType port) noexcept {
-//	switch(port){
-//	case PortType::PA: return  &PINA;
-//	case PortType::PB: return  &PINB;
-//	case PortType::PC: return  &PINC;
-//	case PortType::PD: return  &PIND;
-//	case PortType::PE: return  &PINE;
-//	case PortType::PF: return  &PINF;
-//	case PortType::PG: return  &PING;
-//	case PortType::PH: return  &PINH;
-//	case PortType::PJ: return  &PINJ;
-//	case PortType::PK: return  &PINK;
-//	case PortType::PL: return  &PINL;
-//	default: return NOT_A_PORT; // nullptr
-//	}
-//}
 #endif
 #ifndef UsePetersCpp17
 #ifdef ARDUINO_MAIN
@@ -677,163 +644,9 @@ constexpr inline timer_values digital_pin_to_timer_PS(PinType const pin) noexcep
 	return NOT_ON_TIMER;
 
 }
-// from wiring_private
-#ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define CBI_SET
-#endif
-#ifndef sbi
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-#define SBI_SET
-#endif
-#if not_very_efficient_attempt
-template<PinType pin>
-inline void analog_pin_to_timer_turnoff() noexcept {
-	using PT=PinType;
-	using funptr=void(*)();
-	constexpr funptr  timer_turnoff_map[] {
-		/* PT::D02 */	[]{cbi(TCCR3A, COM3B1);}, // 0x90 TIMER3B,
-		/* PT::D03 */	[]{cbi(TCCR3A, COM3C1);}, // 0x90 TIMER3C,
-		/* PT::D04 */	[]{cbi(TCCR0A, COM0B1);}, // 0x24 TIMER0B,
-		/* PT::D05 */   []{cbi(TCCR3A, COM3A1);}, // 0x90 TIMER3A,
-		/* PT::D06 */   []{cbi(TCCR4A, COM4A1);}, // 0xC0 TIMER4A,
-		/* PT::D07 */   []{cbi(TCCR4A, COM4B1);}, // 0xC0 TIMER4B,
-		/* PT::D08 */   []{cbi(TCCR4A, COM4C1);}, // 0xC0 TIMER4C,
-		/* PT::D09 */   []{cbi(TCCR2A, COM2B1);},// 0xB0 TIMER2B,
-		/* PT::D10 */   []{cbi(TCCR2A, COM2A1);},// 0xB0 TIMER2A,
-		/* PT::D11 */   []{cbi(TCCR1A, COM1A1);}, // 0x80 TIMER1A,
-		/* PT::D12 */   []{cbi(TCCR1A, COM1B1);}, // 0x80 TIMER1B,
-		/* PT::D13 */   []{cbi(TCCR0A, COM0A1);}, // 0x24 TIMER0A,
-		/* PT::D44 */   []{cbi(TCCR5A, COM5C1);},// 0x120 TIMER5C,
-		/* PT::D45 */   []{cbi(TCCR5A, COM5B1);},// 0x120 TIMER5B,
-		/* PT::D46 */   []{cbi(TCCR5A, COM5A1);}  // 0x120 TIMER5A
-	};
-	if (pin>=PT::D02 && pin <= PT::D13){
-		timer_turnoff_map[pin-PT::D02]();
-	} else if (pin >=PT::D44 && pin <= PT::D46){
-		timer_turnoff_map[pin-PT::D44 + 12]();
-	}
-}
 
-inline void analog_pin_to_timer_turnoff(PinType const pin) noexcept {
-	using PT=PinType;
-	using funptr=void(*)();
-	constexpr funptr  timer_turnoff_map[] {
-		/* PT::D02 */	[]{cbi(TCCR3A, COM3B1);}, // 0x90 TIMER3B,
-		/* PT::D03 */	[]{cbi(TCCR3A, COM3C1);}, // 0x90 TIMER3C,
-		/* PT::D04 */	[]{cbi(TCCR0A, COM0B1);}, // 0x24 TIMER0B,
-		/* PT::D05 */   []{cbi(TCCR3A, COM3A1);}, // 0x90 TIMER3A,
-		/* PT::D06 */   []{cbi(TCCR4A, COM4A1);}, // 0xC0 TIMER4A,
-		/* PT::D07 */   []{cbi(TCCR4A, COM4B1);}, // 0xC0 TIMER4B,
-		/* PT::D08 */   []{cbi(TCCR4A, COM4C1);}, // 0xC0 TIMER4C,
-		/* PT::D09 */   []{cbi(TCCR2A, COM2B1);},// 0xB0 TIMER2B,
-		/* PT::D10 */   []{cbi(TCCR2A, COM2A1);},// 0xB0 TIMER2A,
-		/* PT::D11 */   []{cbi(TCCR1A, COM1A1);}, // 0x80 TIMER1A,
-		/* PT::D12 */   []{cbi(TCCR1A, COM1B1);}, // 0x80 TIMER1B,
-		/* PT::D13 */   []{cbi(TCCR0A, COM0A1);}, // 0x24 TIMER0A,
-		/* PT::D44 */   []{cbi(TCCR5A, COM5C1);},// 0x120 TIMER5C,
-		/* PT::D45 */   []{cbi(TCCR5A, COM5B1);},// 0x120 TIMER5B,
-		/* PT::D46 */   []{cbi(TCCR5A, COM5A1);}  // 0x120 TIMER5A
-	};
-	if (pin>=PT::D02 && pin <= PT::D13){
-		timer_turnoff_map[pin-PT::D02]();
-	} else if (pin >=PT::D44 && pin <= PT::D46){
-		timer_turnoff_map[pin-PT::D44 + 12]();
-	}
-}
-
-
-inline void analog_pin_to_timer_prepare(uint8_t const pin) noexcept {
-	using PT=PinType;
-	using funptr=void(*)();
-	constexpr funptr  timer_prepare_map[] {
-		/* PT::D02 */	[]{sbi(TCCR3A, COM3B1);}, // 0x90 TIMER3B,
-		/* PT::D03 */	[]{sbi(TCCR3A, COM3C1);}, // 0x90 TIMER3C,
-		/* PT::D04 */	[]{sbi(TCCR0A, COM0B1);}, // 0x24 TIMER0B,
-		/* PT::D05 */   []{sbi(TCCR3A, COM3A1);}, // 0x90 TIMER3A,
-		/* PT::D06 */   []{sbi(TCCR4A, COM4A1);
-		#if defined(COM4A0)
-						   cbi(TCCR4A, COM4A0);
-		#endif
-		}, // 0xC0 TIMER4A,
-		/* PT::D07 */   []{sbi(TCCR4A, COM4B1);}, // 0xC0 TIMER4B,
-		/* PT::D08 */   []{sbi(TCCR4A, COM4C1);}, // 0xC0 TIMER4C,
-		/* PT::D09 */   []{sbi(TCCR2A, COM2B1);},// 0xB0 TIMER2B,
-		/* PT::D10 */   []{sbi(TCCR2A, COM2A1);},// 0xB0 TIMER2A,
-		/* PT::D11 */   []{sbi(TCCR1A, COM1A1);}, // 0x80 TIMER1A,
-		/* PT::D12 */   []{sbi(TCCR1A, COM1B1);}, // 0x80 TIMER1B,
-		/* PT::D13 */   []{sbi(TCCR0A, COM0A1);}, // 0x24 TIMER0A,
-		/* PT::D44 */   []{sbi(TCCR5A, COM5C1);},// 0x120 TIMER5C,
-		/* PT::D45 */   []{sbi(TCCR5A, COM5B1);},// 0x120 TIMER5B,
-		/* PT::D46 */   []{sbi(TCCR5A, COM5A1);}  // 0x120 TIMER5A
-	};
-	if (pin>=PT::D02 && pin <= PT::D13){
-		timer_prepare_map[pin-PT::D02]();
-	} else if (pin >=PT::D44 && pin <= PT::D46){
-		timer_prepare_map[pin-PT::D44 + 12]();
-	}
-}
-constexpr
-inline void analog_pin_to_timer_assign(uint8_t const pin,int val) noexcept {
-	using PT=PinType;
-	using funptr=void(*)(int);
-	constexpr funptr  timer_assign_map[] { // using lambdas to deal with different types of OCR registers (8vs16 bit)
-		/* PT::D02 */	[](int val){OCR3B = val; }, // 0x90 TIMER3B,
-		/* PT::D03 */	[](int val){OCR3C = val; }, // 0x90 TIMER3C,
-		/* PT::D04 */	[](int val){OCR0B = val; }, // 0x24 TIMER0B,
-		/* PT::D05 */   [](int val){OCR3A = val; }, // 0x90 TIMER3A,
-		/* PT::D06 */   [](int val){OCR4A = val; }, // 0xC0 TIMER4A,
-		/* PT::D07 */   [](int val){OCR4B = val; }, // 0xC0 TIMER4B,
-		/* PT::D08 */   [](int val){OCR4C = val; }, // 0xC0 TIMER4C,
-		/* PT::D09 */   [](int val){OCR2B = val; },// 0xB0 TIMER2B,
-		/* PT::D10 */   [](int val){OCR2A = val; },// 0xB0 TIMER2A,
-		/* PT::D11 */   [](int val){OCR1A = val; }, // 0x80 TIMER1A,
-		/* PT::D12 */   [](int val){OCR1B = val; }, // 0x80 TIMER1B,
-		/* PT::D13 */   [](int val){OCR0A = val; }, // 0x24 TIMER0A,
-		/* PT::D44 */   [](int val){OCR5C = val; },// 0x120 TIMER5C,
-		/* PT::D45 */   [](int val){OCR5B = val; },// 0x120 TIMER5B,
-		/* PT::D46 */   [](int val){OCR5A = val; }  // 0x120 TIMER5A
-	};
-	if (pin>=PT::D02 && pin <= PT::D13){
-		timer_assign_map[pin-PT::D02](val);
-	} else if (pin >=PT::D44 && pin <= PT::D46){
-		timer_assign_map[pin-PT::D44 + 12](val);
-	}
-}
-#endif
-
-template <uint8_t pin, uint8_t val>
-void digitalWrite();
-
-#include "pwm_timer_handling.h"
-// template variations/non-argument overloads in pwm_timer_handling
-
-inline void analog_timer_turnoff(timer_values const theTimer) noexcept {
-	switch (theTimer) {
-	case TIMER0A: analog_timer_turnoff<TIMER0A>(); break;
-	case TIMER0B: analog_timer_turnoff<TIMER0B>(); break;
-	case TIMER1A: analog_timer_turnoff<TIMER1A>(); break;
-	case TIMER1B: analog_timer_turnoff<TIMER1B>(); break;
-	case TIMER1C: analog_timer_turnoff<TIMER1C>(); break;
-	case TIMER2A: analog_timer_turnoff<TIMER2A>(); break;
-	case TIMER2B: analog_timer_turnoff<TIMER2B>(); break;
-	case TIMER3A: analog_timer_turnoff<TIMER3A>(); break;
-	case TIMER3B: analog_timer_turnoff<TIMER3B>(); break;
-	case TIMER3C: analog_timer_turnoff<TIMER3C>(); break;
-	case TIMER4A: analog_timer_turnoff<TIMER4A>(); break;
-	case TIMER4B: analog_timer_turnoff<TIMER4B>(); break;
-	case TIMER4C: analog_timer_turnoff<TIMER4C>(); break;
-	case TIMER5A: analog_timer_turnoff<TIMER5A>(); break;
-	case TIMER5B: analog_timer_turnoff<TIMER5B>(); break;
-	case TIMER5C: analog_timer_turnoff<TIMER5C>(); break;
-	default:;
-	}
-}
-inline void analog_pin_to_timer_turnoff(PinType const pin) noexcept {
-	auto const theTimer = digital_pin_to_timer_PS(pin);
-	analog_timer_turnoff(theTimer); // this way hope for better constant folding and inlining
-}
-inline void setPWMValue(timer_values const theTimer, int val) noexcept {
+#include "wiring_inline.h"
+inline void setPWMValue(timer_values const theTimer, int val)  {
 	switch (theTimer) {
 	case TIMER0A: setPWMValue<TIMER0A>(val); break;
 	case TIMER0B: setPWMValue<TIMER0B>(val); break;
@@ -855,348 +668,29 @@ inline void setPWMValue(timer_values const theTimer, int val) noexcept {
 	}
 }
 
-// no need for further constant folding? try it anyway
-template <uint8_t pin,uint8_t  mode>
-inline
-void pinMode()
-{
-	constexpr uint8_t const bit = digitalPinToBitMask(pin);
-	constexpr PortType const port = digitalPinToPort(pin);
-
-
-	if constexpr (port == NO_PORT) return;
-
-	 volatile uint8_t * const reg = portModeRegister(port);
-	 volatile uint8_t * const out = portOutputRegister(port);
-	if constexpr (mode == INPUT) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out &= ~bit;
-	} else if constexpr (mode == INPUT_PULLUP) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out |= bit;
-	} else {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg |= bit;
-	}
-}
-
-template <uint8_t pin>
-inline
-void pinMode(uint8_t const mode)
-{
-	constexpr uint8_t const bit = digitalPinToBitMask(pin);
-	constexpr PortType const port = digitalPinToPort(pin);
-
-
-	if constexpr (port == NO_PORT) return;
-
-	 volatile uint8_t *  reg = portModeRegister(port);
-	 volatile uint8_t *  out = portOutputRegister(port);
-	if (mode == INPUT) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out &= ~bit;
-	} else if (mode == INPUT_PULLUP) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out |= bit;
-	} else {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg |= bit;
-	}
-}
-
-inline
-void pinMode(uint8_t const pin, uint8_t const mode)
-{
-	uint8_t const bit = digitalPinToBitMask(pin);
-	PortType const port = digitalPinToPort(pin);
-
-
-	if (port == NO_PORT) return;
-
-	volatile uint8_t * const reg = portModeRegister(port);
-	volatile uint8_t * const out = portOutputRegister(port);
-	if (mode == INPUT) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out &= ~bit;
-	} else if (mode == INPUT_PULLUP) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out |= bit;
-	} else {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg |= bit;
-	}
-}
-inline
-void digitalWrite(uint8_t const pin, uint8_t const val)
-{
-	auto const timer = digitalPinToTimer(static_cast<PinType>(pin));
-	auto const port = digital_pin_to_Port_PS(static_cast<PinType>(pin));
-	auto const bit = bitmask::digital_pin_to_BitMask_PS(static_cast<PinType>(pin));
-
-	if (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if (timer != NOT_ON_TIMER) analog_timer_turnoff(timer);
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if (val == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
-	}
-}
-
-template<uint8_t L_H>
-inline
-void digitalWrite_LH(uint8_t const pin)
-{
-	auto const timer = digitalPinToTimer(PinType(pin));
-	auto const port = digital_pin_to_Port_PS(pin);
-	auto const bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff(PinType(pin));
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if constexpr (L_H == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
+inline void analog_timer_turnoff(timer_values const theTimer)  {
+	switch (theTimer) {
+	case TIMER0A: analog_timer_turnoff<TIMER0A>(); break;
+	case TIMER0B: analog_timer_turnoff<TIMER0B>(); break;
+	case TIMER1A: analog_timer_turnoff<TIMER1A>(); break;
+	case TIMER1B: analog_timer_turnoff<TIMER1B>(); break;
+	case TIMER1C: analog_timer_turnoff<TIMER1C>(); break;
+	case TIMER2A: analog_timer_turnoff<TIMER2A>(); break;
+	case TIMER2B: analog_timer_turnoff<TIMER2B>(); break;
+	case TIMER3A: analog_timer_turnoff<TIMER3A>(); break;
+	case TIMER3B: analog_timer_turnoff<TIMER3B>(); break;
+	case TIMER3C: analog_timer_turnoff<TIMER3C>(); break;
+	case TIMER4A: analog_timer_turnoff<TIMER4A>(); break;
+	case TIMER4B: analog_timer_turnoff<TIMER4B>(); break;
+	case TIMER4C: analog_timer_turnoff<TIMER4C>(); break;
+	case TIMER5A: analog_timer_turnoff<TIMER5A>(); break;
+	case TIMER5B: analog_timer_turnoff<TIMER5B>(); break;
+	case TIMER5C: analog_timer_turnoff<TIMER5C>(); break;
+	default:;
 	}
 }
 
 
-
-template <uint8_t pin>
-inline
-void digitalWrite(uint8_t const val)
-{
-	constexpr uint8_t const timer = digitalPinToTimer(PinType(pin));
-	constexpr auto port = digital_pin_to_Port_PS(pin);
-	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if constexpr (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if constexpr (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff<PinType(pin)>();
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if (val == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
-	}
-}
-template <uint8_t pin, uint8_t val>
-void digitalWrite()
-{
-	constexpr auto const timer = digitalPinToTimer(PinType(pin));
-	constexpr auto port = digital_pin_to_Port_PS(pin);
-	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if constexpr (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if constexpr (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff<PinType(pin)>();
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if constexpr (val == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
-	}
-}
-template <uint8_t pin>
-inline
-int digitalRead()
-{
-	constexpr auto timer = digitalPinToTimer(PinType(pin));
-	constexpr uint8_t bit = digitalPinToBitMask(pin);
-	constexpr PortType port = digitalPinToPort(pin);
-
-	if constexpr (port == NO_PORT) return LOW;
-
-	// If the pin that support PWM output, we need to turn it off
-	// before getting a digital reading.
-	if constexpr (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff<PinType(pin)>();
-
-	if (*portInputRegister(port) & bit) return HIGH;
-	return LOW;
-}
-inline
-int digitalRead(uint8_t const pin)
-{
-	auto const timer = digitalPinToTimer(PinType(pin));
-	uint8_t const bit = digitalPinToBitMask(pin);
-	PortType const port = digitalPinToPort(pin);
-
-	if (port == NO_PORT) return LOW;
-
-	// If the pin that support PWM output, we need to turn it off
-	// before getting a digital reading.
-	if (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff(PinType(pin));
-
-	if (*portInputRegister(port) & bit) return HIGH;
-	return LOW;
-}
-namespace analog{
-inline uint8_t analog_reference = DEFAULT;
-
-inline
-void analogReference(uint8_t mode)
-{
-	// can't actually set the register here because the default setting
-	// will connect AVCC and the AREF pin, which would cause a short if
-	// there's something connected to AREF.
-	analog_reference = mode;
-}
-}
-inline
-int analogRead(uint8_t pin)
-{
-	using ::analog::analog_reference;
-
-#if defined(analogPinToChannel)
-#if defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
-#endif
-	pin = analogPinToChannel(pin);
-#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-	if (pin >= 54) pin -= 54; // allow for channel or pin numbers
-#elif defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
-#elif defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
-	if (pin >= 24) pin -= 24; // allow for channel or pin numbers
-#else
-	if (pin >= 14) pin -= 14; // allow for channel or pin numbers
-#endif
-
-#if defined(ADCSRB) && defined(MUX5)
-	// the MUX5 bit of ADCSRB selects whether we're reading from channels
-	// 0 to 7 (MUX5 low) or 8 to 15 (MUX5 high).
-	ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
-#endif
-
-	// set the analog reference (high two bits of ADMUX) and select the
-	// channel (low 4 bits).  this also sets ADLAR (left-adjust result)
-	// to 0 (the default).
-#if defined(ADMUX)
-#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
-	ADMUX = (analog_reference << 4) | (pin & 0x07);
-#else
-	ADMUX = (analog_reference << 6) | (pin & 0x07);
-#endif
-#endif
-
-	// without a delay, we seem to read from the wrong channel
-	//delay(1);
-
-#if defined(ADCSRA) && defined(ADCL)
-	// start the conversion
-	sbi(ADCSRA, ADSC);
-
-	// ADSC is cleared when the conversion finishes
-	while (bit_is_set(ADCSRA, ADSC));
-
-	// we have to read ADCL first; doing so locks both ADCL
-	// and ADCH until ADCH is read.  reading ADCL second would
-	// cause the results of each conversion to be discarded,
-	// as ADCL and ADCH would be locked when it completed.
-	uint8_t const low  = ADCL;
-	uint8_t const high = ADCH;
-	return (high << 8) | low;
-#else
-	// we dont have an ADC,
-	return 0;
-#endif
-}
-
-template<uint8_t pin>
-inline
-void analogWrite(int const val)
-{
-	// We need to make sure the PWM output is enabled for those pins
-	// that support it, as we turn it off when digitally reading or
-	// writing with them.  Also, make sure the pin is in output mode
-	// for consistenty with Wiring, which doesn't require a pinMode
-	// call for the analog output pins.
-	pinMode<pin,OUTPUT>();
-	constexpr auto const timer = digital_pin_to_timer_PS(PinType(pin)); // compile time
-	// assume compiler optimizes better
-	if (val == 0 || (timer == NOT_ON_TIMER && val < 128))
-	{
-		digitalWrite<pin,LOW>();
-	}
-	else if (val == 255 || (timer == NOT_ON_TIMER && val >= 128))
-	{
-		digitalWrite<pin,HIGH>();
-	}
-	else
-	{
-		setPWMValue<timer>(val);
-	}
-}
-inline
-void analogWrite(uint8_t const pin, int const val)
-{
-	// We need to make sure the PWM output is enabled for those pins
-	// that support it, as we turn it off when digitally reading or
-	// writing with them.  Also, make sure the pin is in output mode
-	// for consistenty with Wiring, which doesn't require a pinMode
-	// call for the analog output pins.
-	pinMode(pin, OUTPUT);
-	if (val == 0)
-	{
-		digitalWrite(pin,LOW);
-	}
-	else if (val == 255)
-	{
-		digitalWrite(pin,HIGH);
-	}
-	else
-	{
-		auto const timer = digital_pin_to_timer_PS(PinType(pin));
-		if (timer != NOT_ON_TIMER){
-			setPWMValue(timer,val);
-		} else { // not on a timer
-			if (val < 128) {
-				digitalWrite(pin,LOW);
-			} else {
-				digitalWrite(pin,HIGH);
-			}
-
-		}
-	}
-}
-
-#ifdef CBI_SET
-#undef CBI_SET
-#undef cbi
-#endif
-#ifdef SBI_SET
-#undef SBI_SET
-#undef sbi
-#endif
 
 #endif
 

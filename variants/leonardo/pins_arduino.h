@@ -497,9 +497,10 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM[] = {
 };
 #endif
 #else
-constexpr inline timer_values digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+constexpr inline timer_values digital_pin_to_timer_PS(PinType const pin) noexcept {
 	// might need different approach than switch, because of RAM usage of section .rodata
-	switch (static_cast<PinType>(pin)) {
+	// not really, if it is used as constexpr function only.
+	switch (pin) {
 	case D03:
 		return TIMER0B;//,		/* 3 */ -> 2
 	case D05:
@@ -516,27 +517,6 @@ constexpr inline timer_values digital_pin_to_timer_PS(uint8_t const pin) noexcep
 		return TIMER4A;//,		/* 13 */->12
 	default:
 		return NOT_ON_TIMER;
-	}
-}
-constexpr
-inline volatile uint8_t * digital_pin_to_timer_tccr(uint8_t const pin) noexcept {
-	switch (static_cast<PinType>(pin)) {
-	case D03:
-		return &TCCR0B;//,		/* 3 */ -> 2
-	case D05:
-		return &TCCR3A;//,		/* 5 */ -> 9
-	case D06:
-		return &TCCR4C;//,TIMER4D !		/* 6 */ ->15
-	case D09:
-		return &TCCR1A;//,		/* 9 */ ->3
-	case D10:
-		return &TCCR1A;//,TIMER1B		/* 10 */->4
-	case D11:
-		return &TCCR0A;//,		/* 11 */->1
-	case D13:
-		return &TCCR0A;//,		/* 13 */->12
-	default:
-		return nullptr;
 	}
 }
 
@@ -578,6 +558,43 @@ constexpr inline uint8_t analog_pin_to_channel_PS(uint8_t pin){
 	}
 	return 0; // to silence warning;
 }
+
+// API for wiring_inline should go there.
+
+
+#include "wiring_inline.h"
+
+// template variations/non-argument overloads in pwm_timer_handling
+
+inline void analog_timer_turnoff(timer_values const theTimer)  {
+	switch (theTimer) {
+	case TIMER0A: analog_timer_turnoff<TIMER0A>(); break;
+	case TIMER0B: analog_timer_turnoff<TIMER0B>(); break;
+	case TIMER1A: analog_timer_turnoff<TIMER1A>(); break;
+	case TIMER1B: analog_timer_turnoff<TIMER1B>(); break;
+	case TIMER3A: analog_timer_turnoff<TIMER3A>(); break;
+	case TIMER4A: analog_timer_turnoff<TIMER4A>(); break;
+	case TIMER4B: analog_timer_turnoff<TIMER4B>(); break;
+	case TIMER4D: analog_timer_turnoff<TIMER4D>(); break;
+	default:;
+	}
+}
+inline void setPWMValue(timer_values const theTimer, int val)  {
+	switch (theTimer) {
+	case TIMER0A: setPWMValue<TIMER0A>(val); break;
+	case TIMER0B: setPWMValue<TIMER0B>(val); break;
+	case TIMER1A: setPWMValue<TIMER1A>(val); break;
+	case TIMER1B: setPWMValue<TIMER1B>(val); break;
+	case TIMER3A: setPWMValue<TIMER3A>(val); break;
+	case TIMER3B: setPWMValue<TIMER3B>(val); break;
+	case TIMER4A: setPWMValue<TIMER4A>(val); break;
+	case TIMER4D: setPWMValue<TIMER4D>(val); break;
+	default:;
+	}
+}
+
+
+
 #endif
 
 // These serial port names are intended to allow libraries and architecture-neutral

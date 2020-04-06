@@ -385,10 +385,10 @@ enum PinType:uint8_t {
 	LED_BUILTIN=D13
 };
 template <PinType ...pins>
-constexpr inline bool isOneOfPins(uint8_t pin) noexcept {
+constexpr inline bool isOneOfPins(uint8_t pin)  {
 	return (1UL << pin) & ((1UL << pins)|...); // faster and smaller than == || , but only if max 32 bits
 }
-constexpr inline bool digitalPinHasPWM(uint8_t p)noexcept {
+constexpr inline bool digitalPinHasPWM(uint8_t p) {
 #if defined(__AVR_ATmega8__)
 //#define digitalPinHasPWM(p)         ((p) == 9 || (p) == 10 || (p) == 11)
 	return isOneOfPins<D09,D10,D11>(p);
@@ -399,7 +399,7 @@ constexpr inline bool digitalPinHasPWM(uint8_t p)noexcept {
 }
 
 
-constexpr inline PortType digital_pin_to_Port_PS(uint8_t const pin) noexcept {
+constexpr inline PortType digital_pin_to_Port_PS(uint8_t const pin)  {
 	if (static_cast<PinType>(pin) < PinType::D08) return PortType::PD;
 	else if (static_cast<PinType>(pin) < PinType::A0) return PortType::PB;
 	else if (static_cast<PinType>(pin) <= PinType::A5) return PortType::PC;
@@ -436,9 +436,7 @@ static constexpr inline uint8_t digital_pin_to_BitMask_PS(uint8_t pin) noexcept 
 //	return 0; // 0 might break code, may be, but is better indicator.
 }
 };
-
-
-constexpr inline timer_values digital_pin_to_timer_PS(uint8_t const pin) noexcept {
+constexpr inline timer_values digital_pin_to_timer_PS(PinType const pin) noexcept {
 #if defined(__AVR_ATmega8__)
 	if (pin == PinType::D11)
 		return TIMER2;//,		/* 11 */ -> 6
@@ -457,576 +455,42 @@ constexpr inline timer_values digital_pin_to_timer_PS(uint8_t const pin) noexcep
 	if (pin ==  PinType::D10)
 		return TIMER1B;//,		/* 10 */ -> 4
 	return NOT_ON_TIMER;
-
-//
-//	switch (static_cast<PinType>(pin)) {
-//#if defined(__AVR_ATmega8__)
-//	case PinType::D11:
-//		return TIMER2;//,		/* 11 */ -> 6
-//#else
-//	case PinType::D03://        /* 3 */ -> 8
-//		return 	TIMER2B;
-//	case PinType::D05:
-//		return TIMER0B;//,		/* 5 */ -> 2
-//	case PinType::D06:
-//		return TIMER0A;//,		/* 6 */ -> 1
-//	case PinType::D11:
-//		return TIMER2A;//,		/* 11 */ -> 7
-//#endif
-//	case PinType::D09:
-//		return TIMER1A;//,		/* 9 */ -> 3
-//	case PinType::D10:
-//		return TIMER1B;//,		/* 10 */ -> 4
-//	default:
-//		return NOT_ON_TIMER;
-//	}
 }
 
-//*************** try inline digitalWrite/Read and see what code is generated....
-struct port_bit {
-	PortType port;
-	uint8_t bit;
-};
-constexpr inline
-port_bit digital_pin_to_port_bit(uint8_t const pin) noexcept {
-	return {digital_pin_to_Port_PS(pin),bitmask::digital_pin_to_BitMask_PS(pin)};
-}
-//struct SafeStatusRegisterAndClearInterrupt{
-//	uint8_t oldSREG;
-//	SafeStatusRegisterAndClearInterrupt()
-//	:oldSREG{SREG} {
-//		cli();
-//	}
-//	~SafeStatusRegisterAndClearInterrupt(){
-//		SREG = oldSREG;
-//	}
-//};
-#include <avr/io.h>
+#include "wiring_inline.h"
 
-#ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define CBI_SET
-#endif
-#ifndef sbi
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-#define SBI_SET
-#endif
-
-struct timer_info {
-	volatile uint8_t * tccr;
-	volatile void * ocr; // oh shit, 16 or 8 bit pointer.... need to put more smartness here
-	uint8_t          combit;
-	bool	is16bit;
-	void setValue(int val) const {
-		if (is16bit)
-			*reinterpret_cast<volatile uint16_t *>(ocr) = val;
-		else
-			*reinterpret_cast<volatile uint8_t *>(ocr) = val;
-	}
-	constexpr static timer_info make(volatile uint8_t * tccr_, volatile uint8_t *ocr_, uint8_t combit_){
-		return timer_info{tccr_,ocr_,combit_,false};
-	}
-	constexpr static timer_info make(volatile uint8_t * tccr_, volatile uint16_t *ocr_, uint8_t combit_){
-			return timer_info{tccr_,ocr_,combit_,true};
-	}
-};
-struct timer_OCR_info {
-	volatile void * const ocr; // oh shit, 16 or 8 bit pointer.... need to put more smartness here
-	bool	const is16bit;
-	void setValue(int val) const {
-		if (is16bit)
-			*reinterpret_cast<volatile uint16_t *>(ocr) = val;
-		else
-			*reinterpret_cast<volatile uint8_t *>(ocr) = val;
-	}
-	constexpr static timer_OCR_info make(volatile uint8_t *ocr_){
-		return timer_OCR_info{ocr_,false};
-	}
-	constexpr static timer_OCR_info make(volatile uint16_t *ocr_){
-			return timer_OCR_info{ocr_,true};
-	}
-};
-constexpr
-inline volatile uint8_t * digital_pin_to_timer_tccr(uint8_t const pin) noexcept {
-	// values taken from wiring_analog.c
+inline void analog_timer_turnoff(timer_values const theTimer)  {
+	switch (theTimer) {
 #if defined(__AVR_ATmega8__)
-	if (pin == PinType::D11)
-		return  &TCCR2;//TIMER2;//,		/* 11 */ -> 6 // OCR2 always 8bit
+	case TIMER2: analog_timer_turnoff<TIMER2>(); break;
 #else
-	if (pin == PinType::D03) //        /* 3 */ -> 8
-		return &TCCR2A;//TIMER2B; // OCR2B 8 or 16
-	if (pin ==  PinType::D05)
-		return &TCCR0A;//TIMER0B;//,		/* 5 */ -> 2 // OCR0B 8bit except some tiny iotn[4,5,9,10].h
-	if (pin ==  PinType::D06){
-#if defined(TCCR0) && defined(COM00) && !defined(__AVR_ATmega8__)
-		return &TCCR0;//TIMER0A;//,		/* 6 */ -> 1 // OCR0 8bit
-#elif defined(TCCR0A) && defined(COM0A1)
-		return &TCCR0A;//TIMER0A;//,		/* 6 */ -> 1 // OCR0A 8bit except some tiny like OCR0B
+	case TIMER2B: analog_timer_turnoff<TIMER2B>(); break;
+	case TIMER0B: analog_timer_turnoff<TIMER0B>(); break;
+	case TIMER0A: analog_timer_turnoff<TIMER0A>(); break;
+	case TIMER2A: analog_timer_turnoff<TIMER2A>(); break;
 #endif
+	case TIMER1A: analog_timer_turnoff<TIMER1A>(); break;
+	case TIMER1B: analog_timer_turnoff<TIMER1B>(); break;
+	default:;
 	}
-	if (pin ==  PinType::D11)
-		return &TCCR2A;//TIMER2A;//,		/* 11 */ -> 7 // OCR2A 8bit, except iotn441 iotn841
-#endif
-	if (pin ==  PinType::D09)
-		return  &TCCR1A;//TIMER1A;//,		/* 9 */ -> 3 // mostly 16 bit, except some mega hv, some tiny
-	if (pin ==  PinType::D10)
-		return  &TCCR1A;//TIMER1B;//,		/* 10 */ -> 4 // mostly 16 bit, except same as OCR1B
-	return nullptr; // COMxxx bits are never 0
 }
-
-constexpr inline uint8_t digital_pin_to_timer_combits(uint8_t const pin) noexcept {
-	// values taken from wiring_analog.c
+inline void setPWMValue(timer_values const theTimer, int val)  {
+	switch (theTimer) {
 #if defined(__AVR_ATmega8__)
-	if (pin == PinType::D11)
-		return  COM21 ;//TIMER2;//,		/* 11 */ -> 6 // OCR2 always 8bit
+	case TIMER2: setPWMValue<TIMER2>(val); break;
 #else
-	if (pin == PinType::D03) //        /* 3 */ -> 8
-		return COM2B1 ;//TIMER2B; // OCR2B 8 or 16
-	if (pin ==  PinType::D05)
-		return COM0B1 ;//TIMER0B;//,		/* 5 */ -> 2 // OCR0B 8bit except some tiny iotn[4,5,9,10].h
-	if (pin ==  PinType::D06){
-#if defined(TCCR0) && defined(COM00) && !defined(__AVR_ATmega8__)
-		return COM00 ;//TIMER0A;//,		/* 6 */ -> 1 // OCR0 8bit
-#elif defined(TCCR0A) && defined(COM0A1)
-		return COM0A1 ;//TIMER0A;//,		/* 6 */ -> 1 // OCR0A 8bit except some tiny like OCR0B
+	case TIMER2B: setPWMValue<TIMER2B>(val); break;
+	case TIMER0B: setPWMValue<TIMER0B>(val); break;
+	case TIMER0A: setPWMValue<TIMER0A>(val); break;
+	case TIMER2A: setPWMValue<TIMER2A>(val); break;
 #endif
-	}
-	if (pin ==  PinType::D11)
-		return COM2A1 ;//TIMER2A;//,		/* 11 */ -> 7 // OCR2A 8bit, except iotn441 iotn841
-#endif
-	if (pin ==  PinType::D09)
-		return  COM1A1 ;//TIMER1A;//,		/* 9 */ -> 3 // mostly 16 bit, except some mega hv, some tiny
-	if (pin ==  PinType::D10)
-		return  COM1B1 ;//TIMER1B;//,		/* 10 */ -> 4 // mostly 16 bit, except same as OCR1B
-	return 0; // COMxxx bits are never 0
-}
-
-inline void analog_pin_to_timer_assign(uint8_t const pin, int const val) noexcept {
-	// values taken from wiring_analog.c
-#if defined(__AVR_ATmega8__)
-	if (pin == PinType::D11)
-		 OCR2 = val;//TIMER2;//,		/* 11 */ -> 6 // OCR2 always 8bit
-	else
-#else
-	if (pin == PinType::D03) //        /* 3 */ -> 8
-		OCR2B = val;//TIMER2B; // OCR2B 8 or 16
-	else if (pin ==  PinType::D05)
-		OCR0B = val;//TIMER0B;//,		/* 5 */ -> 2 // OCR0B 8bit except some tiny iotn[4,5,9,10].h
-	else if (pin ==  PinType::D06){
-#if defined(TCCR0) && defined(COM00) && !defined(__AVR_ATmega8__)
-		OCR0 = val;//TIMER0A;//,		/* 6 */ -> 1 // OCR0 8bit
-#elif defined(TCCR0A) && defined(COM0A1)
-		OCR0A=val;//TIMER0A;//,		/* 6 */ -> 1 // OCR0A 8bit except some tiny like OCR0B
-#endif
-	}
-	else if (pin ==  PinType::D11)
-		OCR2A = val;//TIMER2A;//,		/* 11 */ -> 7 // OCR2A 8bit, except iotn441 iotn841
-#endif
-	else if (pin ==  PinType::D09)
-		OCR1A = val;//TIMER1A;//,		/* 9 */ -> 3 // mostly 16 bit, except some mega hv, some tiny
-	else if (pin ==  PinType::D10)
-		OCR1B = val;//TIMER1B;//,		/* 10 */ -> 4 // mostly 16 bit, except same as OCR1B
-}
-
-constexpr inline timer_info digital_pin_to_timer_info(uint8_t const pin) noexcept {
-	// values taken from wiring_analog.c
-#if defined(__AVR_ATmega8__)
-	if (pin == PinType::D11)
-		return { &TCCR2,  &OCR2,  COM21 };//TIMER2;//,		/* 11 */ -> 6 // OCR2 always 8bit
-#else
-	if (pin == PinType::D03) //        /* 3 */ -> 8
-		return timer_info::make( &TCCR2A, &OCR2B, COM2B1 );//TIMER2B; // OCR2B 8 or 16
-	if (pin ==  PinType::D05)
-		return timer_info::make( &TCCR0A, &OCR0B, COM0B1 );//TIMER0B;//,		/* 5 */ -> 2 // OCR0B 8bit except some tiny iotn[4,5,9,10].h
-	if (pin ==  PinType::D06){
-#if defined(TCCR0) && defined(COM00) && !defined(__AVR_ATmega8__)
-		return timer_info::make( &TCCR0,  &OCR0,  COM00  );//TIMER0A;//,		/* 6 */ -> 1 // OCR0 8bit
-#elif defined(TCCR0A) && defined(COM0A1)
-		return timer_info::make( &TCCR0A,  &OCR0A,  COM0A1  );//TIMER0A;//,		/* 6 */ -> 1 // OCR0A 8bit except some tiny like OCR0B
-#endif
-	}
-	if (pin ==  PinType::D11)
-		return timer_info::make( &TCCR2A, &OCR2A, COM2A1 );//TIMER2A;//,		/* 11 */ -> 7 // OCR2A 8bit, except iotn441 iotn841
-#endif
-	if (pin ==  PinType::D09)
-		return timer_info::make( &TCCR1A, &OCR1A, COM1A1 );//TIMER1A;//,		/* 9 */ -> 3 // mostly 16 bit, except some mega hv, some tiny
-	if (pin ==  PinType::D10)
-		return timer_info::make( &TCCR1A, &OCR1B, COM1B1 );//TIMER1B;//,		/* 10 */ -> 4 // mostly 16 bit, except same as OCR1B
-	return timer_info{nullptr,nullptr,0,false}; // COMxxx bits are never 0
-}
-template<PinType pin>
-inline
-void turnOffPWMPS()
-{
-	auto const ti_tccr = digital_pin_to_timer_tccr(pin);
-	auto const ti_combit = digital_pin_to_timer_combits(pin);
-	cbi(*ti_tccr,ti_combit);
-}
-inline
-void turnOffPWMPS(PinType pin)
-{
-	auto const ti_tccr = digital_pin_to_timer_tccr(pin);
-	auto const ti_combit = digital_pin_to_timer_combits(pin);
-	cbi(*ti_tccr,ti_combit);
-}
-
-// no need for further constant folding? try it anyway
-template <uint8_t pin,uint8_t  mode>
-inline
-void pinMode()
-{
-	constexpr uint8_t const bit = digitalPinToBitMask(pin);
-	constexpr PortType const port = digitalPinToPort(pin);
-
-
-	if constexpr (port == NO_PORT) return;
-
-	 volatile uint8_t * const reg = portModeRegister(port);
-	 volatile uint8_t * const out = portOutputRegister(port);
-	if constexpr (mode == INPUT) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out &= ~bit;
-	} else if constexpr (mode == INPUT_PULLUP) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out |= bit;
-	} else {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg |= bit;
-	}
-}
-
-template <uint8_t pin>
-inline
-void pinMode(uint8_t const mode)
-{
-	constexpr uint8_t const bit = digitalPinToBitMask(pin);
-	constexpr PortType const port = digitalPinToPort(pin);
-
-
-	if constexpr (port == NO_PORT) return;
-
-	 volatile uint8_t *  reg = portModeRegister(port);
-	 volatile uint8_t *  out = portOutputRegister(port);
-	if (mode == INPUT) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out &= ~bit;
-	} else if (mode == INPUT_PULLUP) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out |= bit;
-	} else {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg |= bit;
-	}
-}
-
-inline
-void pinMode(uint8_t const pin, uint8_t const mode)
-{
-	uint8_t const bit = digitalPinToBitMask(pin);
-	PortType const port = digitalPinToPort(pin);
-
-
-	if (port == NO_PORT) return;
-
-	volatile uint8_t * const reg = portModeRegister(port);
-	volatile uint8_t * const out = portOutputRegister(port);
-	if (mode == INPUT) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out &= ~bit;
-	} else if (mode == INPUT_PULLUP) {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg &= ~bit;
-		*out |= bit;
-	} else {
-		SafeStatusRegisterAndClearInterrupt safe;
-		*reg |= bit;
-	}
-}
-inline
-void digitalWrite(uint8_t const pin, uint8_t const val)
-{
-	auto const timer = digitalPinToTimer(pin);
-	auto const port = digital_pin_to_Port_PS(pin);
-	auto const bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if (timer != NOT_ON_TIMER) turnOffPWMPS(PinType(pin));
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if (val == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
-	}
-}
-
-template<uint8_t L_H>
-inline
-void digitalWrite_LH(uint8_t const pin)
-{
-	auto const timer = digitalPinToTimer(pin);
-	auto const port = digital_pin_to_Port_PS(pin);
-	auto const bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if (timer != NOT_ON_TIMER) turnOffPWMPS(PinType(pin));
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if constexpr (L_H == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
+	case TIMER1A: setPWMValue<TIMER1A>(val); break;
+	case TIMER1B: setPWMValue<TIMER1B>(val); break;
+	default:;
 	}
 }
 
 
-
-template <uint8_t pin>
-inline
-void digitalWrite(uint8_t const val)
-{
-	constexpr uint8_t const timer = digitalPinToTimer(pin);
-	constexpr auto port = digital_pin_to_Port_PS(pin);
-	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if constexpr (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if constexpr (timer != NOT_ON_TIMER) turnOffPWMPS<PinType(pin)>();
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if (val == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
-	}
-}
-template <uint8_t pin, uint8_t val>
-void digitalWrite()
-{
-	constexpr auto const timer = digitalPinToTimer(pin);
-	constexpr auto port = digital_pin_to_Port_PS(pin);
-	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
-
-	if constexpr (port == NO_PORT) return; // should use the enum...
-
-	// If the pin that support PWM output, we need to turn it off
-	// before doing a digital write.
-	if constexpr (timer != NOT_ON_TIMER) turnOffPWMPS<PinType(pin)>();
-
-	volatile uint8_t * const out = portOutputRegister(port);
-
-	SafeStatusRegisterAndClearInterrupt safe;
-	if constexpr (val == LOW) {
-		*out &= ~bit;
-	} else {
-		*out |= bit;
-	}
-}
-template <uint8_t pin>
-inline
-int digitalRead()
-{
-	constexpr auto timer = digitalPinToTimer(pin);
-	constexpr uint8_t bit = digitalPinToBitMask(pin);
-	constexpr PortType port = digitalPinToPort(pin);
-
-	if constexpr (port == NO_PORT) return LOW;
-
-	// If the pin that support PWM output, we need to turn it off
-	// before getting a digital reading.
-	if constexpr (timer != NOT_ON_TIMER) turnOffPWMPS<PinType(pin)>();
-
-	if (*portInputRegister(port) & bit) return HIGH;
-	return LOW;
-}
-inline
-int digitalRead(uint8_t const pin)
-{
-	auto const timer = digitalPinToTimer(pin);
-	uint8_t const bit = digitalPinToBitMask(pin);
-	PortType const port = digitalPinToPort(pin);
-
-	if (port == NO_PORT) return LOW;
-
-	// If the pin that support PWM output, we need to turn it off
-	// before getting a digital reading.
-	if (timer != NOT_ON_TIMER) turnOffPWMPS(PinType(pin));
-
-	if (*portInputRegister(port) & bit) return HIGH;
-	return LOW;
-}
-
-namespace analog{
-inline uint8_t analog_reference = DEFAULT;
-
-inline
-void analogReference(uint8_t mode)
-{
-	// can't actually set the register here because the default setting
-	// will connect AVCC and the AREF pin, which would cause a short if
-	// there's something connected to AREF.
-	analog_reference = mode;
-}
-}
-inline
-int analogRead(uint8_t pin)
-{
-	using ::analog::analog_reference;
-
-#if defined(analogPinToChannel)
-#if defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
-#endif
-	pin = analogPinToChannel(pin);
-#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-	if (pin >= 54) pin -= 54; // allow for channel or pin numbers
-#elif defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
-#elif defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
-	if (pin >= 24) pin -= 24; // allow for channel or pin numbers
-#else
-	if (pin >= 14) pin -= 14; // allow for channel or pin numbers
-#endif
-
-#if defined(ADCSRB) && defined(MUX5)
-	// the MUX5 bit of ADCSRB selects whether we're reading from channels
-	// 0 to 7 (MUX5 low) or 8 to 15 (MUX5 high).
-	ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
-#endif
-
-	// set the analog reference (high two bits of ADMUX) and select the
-	// channel (low 4 bits).  this also sets ADLAR (left-adjust result)
-	// to 0 (the default).
-#if defined(ADMUX)
-#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
-	ADMUX = (analog_reference << 4) | (pin & 0x07);
-#else
-	ADMUX = (analog_reference << 6) | (pin & 0x07);
-#endif
-#endif
-
-	// without a delay, we seem to read from the wrong channel
-	//delay(1);
-
-#if defined(ADCSRA) && defined(ADCL)
-	// start the conversion
-	sbi(ADCSRA, ADSC);
-
-	// ADSC is cleared when the conversion finishes
-	while (bit_is_set(ADCSRA, ADSC));
-
-	// we have to read ADCL first; doing so locks both ADCL
-	// and ADCH until ADCH is read.  reading ADCL second would
-	// cause the results of each conversion to be discarded,
-	// as ADCL and ADCH would be locked when it completed.
-	uint8_t const low  = ADCL;
-	uint8_t const high = ADCH;
-	return (high << 8) | low;
-#else
-	// we dont have an ADC,
-	return 0;
-#endif
-}
-
-
-
-template <uint8_t const pin>
-inline
-void analogWrite( int const val)
-{
-	// We need to make sure the PWM output is enabled for those pins
-	// that support it, as we turn it off when digitally reading or
-	// writing with them.  Also, make sure the pin is in output mode
-	// for consistenty with Wiring, which doesn't require a pinMode
-	// call for the analog output pins.
-	pinMode<pin, OUTPUT>();
-	if (val == 0)
-	{
-		digitalWrite<pin,LOW>();
-	}
-	else if (val == 255)
-	{
-		digitalWrite<pin,HIGH>();
-	}
-	else
-	{
-		volatile uint8_t* const  ti_tccr = digital_pin_to_timer_tccr(pin);
-		constexpr auto const ti_combit = digital_pin_to_timer_combits(pin);
-		if constexpr (ti_combit){
-			sbi(*ti_tccr,ti_combit);
-			analog_pin_to_timer_assign(pin, val); // set pwm duty
-		} else { // not on a timer
-			if (val < 128) {
-				digitalWrite<pin,LOW>();
-			} else {
-				digitalWrite<pin,HIGH>();
-			}
-
-		}
-	}
-}
-
-inline
-void analogWrite(uint8_t const pin, int const val)
-{
-	// We need to make sure the PWM output is enabled for those pins
-	// that support it, as we turn it off when digitally reading or
-	// writing with them.  Also, make sure the pin is in output mode
-	// for consistenty with Wiring, which doesn't require a pinMode
-	// call for the analog output pins.
-	pinMode(pin, OUTPUT);
-	if (val == 0)
-	{
-		digitalWrite_LH<LOW>(pin);
-	}
-	else if (val == 255)
-	{
-		digitalWrite_LH<HIGH>(pin);
-	}
-	else
-	{
-		auto const ti_tccr = digital_pin_to_timer_tccr(pin);
-		auto const ti_combit = digital_pin_to_timer_combits(pin);
-		if (ti_combit){
-			sbi(*ti_tccr,ti_combit);
-			analog_pin_to_timer_assign(pin, val); // set pwm duty
-		} else { // not on a timer
-			if (val < 128) {
-				digitalWrite_LH<LOW>(pin);
-			} else {
-				digitalWrite_LH<HIGH>(pin);
-			}
-
-		}
-	}
-}
-#ifdef CBI_SET
-#undef CBI_SET
-#undef cbi
-#endif
-#ifdef SBI_SET
-#undef SBI_SET
-#undef sbi
-#endif
 
 
 #endif

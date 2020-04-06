@@ -59,9 +59,12 @@ constexpr auto DISPLAY = 0x1;
 #define LSBFIRST 0
 #define MSBFIRST 1
 
+// for attachInterrupt, should be an enum (including LOW and HIGH - different meaning, therefore values change in ArduinoAPI)
 constexpr auto CHANGE = 1;
 constexpr auto FALLING = 2;
 constexpr auto RISING = 3;
+
+// should be enums in wiring_inline.h
 
 #if defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__)
   constexpr auto DEFAULT = 0;
@@ -347,11 +350,15 @@ void loop(void);
 #pragma GCC diagnostic ignored "-Wattributes"
 struct SafeStatusRegisterAndClearInterrupt{
 	uint8_t oldSREG;
-	[[nodiscard]] SafeStatusRegisterAndClearInterrupt() // attribute only officially in C++20
+	[[nodiscard]] // nodiscard attribute only officially in C++20, but works nevertheless
+	 inline
+	 SafeStatusRegisterAndClearInterrupt() __attribute__((always_inline))
 	:oldSREG{SREG} {
 		cli();
 	}
-	~SafeStatusRegisterAndClearInterrupt(){
+	inline
+	~SafeStatusRegisterAndClearInterrupt() __attribute__((always_inline))
+	{
 		SREG = oldSREG;
 	}
 };
