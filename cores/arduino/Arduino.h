@@ -151,38 +151,52 @@ inline constexpr auto microsecondsToClockCycles(T1&& a) //-> decltype(((a) * clo
 }
 
 template<typename T1> 
-inline constexpr uint8_t lowByte(T1&& w)// -> decltype(((uint8_t)((w) & 0xff)))
+inline
+__attribute__((always_inline))
+constexpr uint8_t lowByte(T1&& w)// -> decltype(((uint8_t)((w) & 0xff)))
 {
     return w & 0xff;
 }
 template<typename T1> 
-inline constexpr uint8_t highByte(T1&& w) //-> decltype(((uint8_t)((w) >> 8)))
+inline
+__attribute__((always_inline))
+constexpr uint8_t highByte(T1&& w) //-> decltype(((uint8_t)((w) >> 8)))
 {
     return w >> 8;
 }
 
 template<typename T1, typename T2> 
-inline constexpr auto bitRead(T1&& value, T2&& bit) //-> decltype((((value) >> (bit)) & 0x01))
+inline
+__attribute__((always_inline))
+constexpr auto bitRead(T1&& value, T2&& bit) //-> decltype((((value) >> (bit)) & 0x01))
 {
     return ((((value) >> (bit)) & 0x01));
 }
 template<typename T1, typename T2> 
-inline constexpr auto bitSet(T1& value, T2&& bit)
+inline
+__attribute__((always_inline))
+constexpr auto bitSet(T1& value, T2&& bit)
 {
     return (((value) |= (1UL << (bit))));
 }
 template<typename T1, typename T2> 
-inline constexpr auto bitClear(T1& value, T2&& bit)
+inline
+__attribute__((always_inline))
+constexpr auto bitClear(T1& value, T2&& bit)
 {
     return (((value) &= ~(1UL << (bit))));
 }
 template<typename T1, typename T2> 
-inline constexpr auto bitToggle(T1& value, T2&& bit)
+inline
+__attribute__((always_inline))
+constexpr auto bitToggle(T1& value, T2&& bit)
 {
     return (((value) ^= (1UL << (bit))));
 }
 template<typename T1, typename T2, typename T3> 
-inline constexpr auto bitWrite(T1& value, T2&& bit, T3&& bitvalue)
+inline
+__attribute__((always_inline))
+constexpr auto bitWrite(T1& value, T2&& bit, T3&& bitvalue)
 {
     return (((bitvalue) ? bitSet(value, bit) : bitClear(value, bit)));
 }
@@ -409,7 +423,7 @@ extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 #endif
 #define analogInPinToBit(P) (P)
 
-#define NOT_A_PIN 0
+#define NOT_A_PIN PinType(255)
 
 #define NOT_AN_INTERRUPT -1
 
