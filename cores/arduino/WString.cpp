@@ -692,11 +692,11 @@ void String::remove(unsigned int index){
 
 void String::remove(unsigned int index, unsigned int count){
 	if (index >= len) { return; }
-	if (count <= 0) { return; }
+	if (count <= 0) { return; } // PS: == 0
 	if (count > len - index) { count = len - index; }
 	char *writeTo = buffer + index;
 	len = len - count;
-	strncpy(writeTo, buffer + index + count,len - index);
+	strncpy(writeTo, buffer + index + count,len - index); // PS: gcc warns on potential overlap.... should write a test.
 	buffer[len] = 0;
 }
 

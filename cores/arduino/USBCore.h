@@ -18,7 +18,9 @@
 #ifndef __USBCORE_H__
 #define __USBCORE_H__
 
-#include "USBAPI.h"
+// PS: circular dependency to USBAPI.h .... seems only for non standard unsigned typedefs
+#include <stdint.h>
+//#include "USBAPI.h"
 
 //	Standard requests
 #define GET_STATUS			0
@@ -134,112 +136,112 @@
 #endif
 
 //	Device
-typedef struct {
-	u8 len;				// 18
-	u8 dtype;			// 1 USB_DEVICE_DESCRIPTOR_TYPE
-	u16 usbVersion;		// 0x200 or 0x210
-	u8	deviceClass;
-	u8	deviceSubClass;
-	u8	deviceProtocol;
-	u8	packetSize0;	// Packet 0
-	u16	idVendor;
-	u16	idProduct;
-	u16	deviceVersion;	// 0x100
-	u8	iManufacturer;
-	u8	iProduct;
-	u8	iSerialNumber;
-	u8	bNumConfigurations;
-} DeviceDescriptor;
+struct DeviceDescriptor {
+	uint8_t len;				// 18
+	uint8_t dtype;			// 1 USB_DEVICE_DESCRIPTOR_TYPE
+	uint16_t usbVersion;		// 0x200 or 0x210
+	uint8_t	deviceClass;
+	uint8_t	deviceSubClass;
+	uint8_t	deviceProtocol;
+	uint8_t	packetSize0;	// Packet 0
+	uint16_t	idVendor;
+	uint16_t	idProduct;
+	uint16_t	deviceVersion;	// 0x100
+	uint8_t	iManufacturer;
+	uint8_t	iProduct;
+	uint8_t	iSerialNumber;
+	uint8_t	bNumConfigurations;
+} ;
 
 //	Config
-typedef struct {
-	u8	len;			// 9
-	u8	dtype;			// 2
-	u16 clen;			// total length
-	u8	numInterfaces;
-	u8	config;
-	u8	iconfig;
-	u8	attributes;
-	u8	maxPower;
-} ConfigDescriptor;
+struct ConfigDescriptor {
+	uint8_t	len;			// 9
+	uint8_t	dtype;			// 2
+	uint16_t clen;			// total length
+	uint8_t	numInterfaces;
+	uint8_t	config;
+	uint8_t	iconfig;
+	uint8_t	attributes;
+	uint8_t	maxPower;
+} ;
 
 //	String
 
 //	Interface
-typedef struct
+struct InterfaceDescriptor
 {
-	u8 len;		// 9
-	u8 dtype;	// 4
-	u8 number;
-	u8 alternate;
-	u8 numEndpoints;
-	u8 interfaceClass;
-	u8 interfaceSubClass;
-	u8 protocol;
-	u8 iInterface;
-} InterfaceDescriptor;
+	uint8_t len;		// 9
+	uint8_t dtype;	// 4
+	uint8_t number;
+	uint8_t alternate;
+	uint8_t numEndpoints;
+	uint8_t interfaceClass;
+	uint8_t interfaceSubClass;
+	uint8_t protocol;
+	uint8_t iInterface;
+} ;
 
 //	Endpoint
-typedef struct
+struct EndpointDescriptor
 {
-	u8 len;		// 7
-	u8 dtype;	// 5
-	u8 addr;
-	u8 attr;
-	u16 packetSize;
-	u8 interval;
-} EndpointDescriptor;
+	uint8_t len;		// 7
+	uint8_t dtype;	// 5
+	uint8_t addr;
+	uint8_t attr;
+	uint16_t packetSize;
+	uint8_t interval;
+} ;
 
 // Interface Association Descriptor
 // Used to bind 2 interfaces together in CDC compostite device
-typedef struct
+struct IADDescriptor
 {
-	u8 len;				// 8
-	u8 dtype;			// 11
-	u8 firstInterface;
-	u8 interfaceCount;
-	u8 functionClass;
-	u8 funtionSubClass;
-	u8 functionProtocol;
-	u8 iInterface;
-} IADDescriptor;
+	uint8_t len;				// 8
+	uint8_t dtype;			// 11
+	uint8_t firstInterface;
+	uint8_t interfaceCount;
+	uint8_t functionClass;
+	uint8_t funtionSubClass;
+	uint8_t functionProtocol;
+	uint8_t iInterface;
+};
 
 //	CDC CS interface descriptor
-typedef struct
+struct CDCCSInterfaceDescriptor
 {
-	u8 len;		// 5
-	u8 dtype;	// 0x24
-	u8 subtype;
-	u8 d0;
-	u8 d1;
-} CDCCSInterfaceDescriptor;
+	uint8_t len;		// 5
+	uint8_t dtype;	// 0x24
+	uint8_t subtype;
+	uint8_t d0;
+	uint8_t d1;
+} ;
 
-typedef struct
+struct CDCCSInterfaceDescriptor4
 {
-	u8 len;		// 4
-	u8 dtype;	// 0x24
-	u8 subtype;
-	u8 d0;
-} CDCCSInterfaceDescriptor4;
+	uint8_t len;		// 4
+	uint8_t dtype;	// 0x24
+	uint8_t subtype;
+	uint8_t d0;
+} ;
 
-typedef struct 
+struct CMFunctionalDescriptor
 {
-    u8	len;
-    u8 	dtype;		// 0x24
-    u8 	subtype;	// 1
-    u8 	bmCapabilities;
-    u8 	bDataInterface;
-} CMFunctionalDescriptor;
+    uint8_t	len;
+    uint8_t 	dtype;		// 0x24
+    uint8_t 	subtype;	// 1
+    uint8_t 	bmCapabilities;
+    uint8_t 	bDataInterface;
+} ;
 	
-typedef struct 
+struct ACMFunctionalDescriptor
 {
-    u8	len;
-    u8 	dtype;		// 0x24
-    u8 	subtype;	// 1
-    u8 	bmCapabilities;
-} ACMFunctionalDescriptor;
+    uint8_t	len;
+    uint8_t 	dtype;		// 0x24
+    uint8_t 	subtype;	// 1
+    uint8_t 	bmCapabilities;
+} ;
 
-typedef struct 
+struct CDCDescriptor
 {
 	//	IAD
 	IADDescriptor				iad;	// Only needed on compound device
@@ -256,14 +258,14 @@ typedef struct
 	InterfaceDescriptor			dif;
 	EndpointDescriptor			in;
 	EndpointDescriptor			out;
-} CDCDescriptor;
+} ;
 
-typedef struct 
+struct MSCDescriptor
 {
 	InterfaceDescriptor			msc;
 	EndpointDescriptor			in;
 	EndpointDescriptor			out;
-} MSCDescriptor;
+} ;
 
 
 #define D_DEVICE(_class,_subClass,_proto,_packetSize0,_vid,_pid,_version,_im,_ip,_is,_configs) \

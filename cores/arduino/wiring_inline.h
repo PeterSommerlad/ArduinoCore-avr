@@ -22,12 +22,7 @@
 
 */
 
-
-
-
-
-
-
+// GENERATED FILE:
 #include "pwm_timer_handling.h"
 
 inline void setPWMValue(timer_values const theTimer, int val);
@@ -35,7 +30,7 @@ inline void setPWMValue(timer_values const theTimer, int val);
 // ************ pinMode - set pin to input, input_pullup, or output
 
 // no need for further constant folding? try it anyway
-template <uint8_t pin,uint8_t  mode>
+template <PinType pin, PinMode  mode>
 inline
 void pinMode()
 {
@@ -59,9 +54,9 @@ void pinMode()
 	}
 }
 
-template <uint8_t pin>
+template <PinType pin>
 inline
-void pinMode(uint8_t const mode)
+void pinMode(PinMode const mode)
 {
 	constexpr uint8_t const bit = digitalPinToBitMask(pin);
 	constexpr PortType const port = digitalPinToPort(pin);
@@ -84,9 +79,9 @@ void pinMode(uint8_t const mode)
 		*reg |= bit;
 	}
 }
-template<uint8_t mode>
+template<PinMode mode>
 inline
-void pinModeFixMode(uint8_t const pin)
+void pinModeFixMode(PinType const pin)
 {
 	uint8_t const bit = digitalPinToBitMask(pin);
 	PortType const port = digitalPinToPort(pin);
@@ -109,8 +104,9 @@ void pinModeFixMode(uint8_t const pin)
 }
 
 
+// put trampoline using legacy uint8_t params in Arduino.h
 inline
-void pinMode(uint8_t const pin, uint8_t const mode)
+void pinMode(PinType const pin, PinMode const mode)
 {
 	uint8_t const bit = digitalPinToBitMask(pin);
 	PortType const port = digitalPinToPort(pin);
@@ -143,11 +139,11 @@ inline void analog_pin_to_timer_turnoff(PinType const pin)  {
 
 // *************** digitalWrite
 inline
-void digitalWrite(uint8_t const pin, uint8_t const val)
+void digitalWrite(PinType const pin, PinState const val)
 {
-	auto const timer = digitalPinToTimer(static_cast<PinType>(pin));
-	auto const port = digital_pin_to_Port_PS(static_cast<PinType>(pin));
-	auto const bit = bitmask::digital_pin_to_BitMask_PS(static_cast<PinType>(pin));
+	auto const timer = digitalPinToTimer(PinType(pin));
+	auto const port = digital_pin_to_Port_PS(PinType(pin));
+	auto const bit = bitmask::digital_pin_to_BitMask_PS(PinType(pin));
 
 	if (port == NO_PORT) return; // should use the enum...
 
@@ -165,9 +161,9 @@ void digitalWrite(uint8_t const pin, uint8_t const val)
 	}
 }
 
-template<uint8_t L_H>
+template<PinState L_H>
 inline
-void digitalWrite_LH(uint8_t const pin)
+void digitalWrite_LH(PinType const pin)
 {
 	auto const timer = digitalPinToTimer(PinType(pin));
 	auto const port = digital_pin_to_Port_PS(pin);
@@ -191,9 +187,9 @@ void digitalWrite_LH(uint8_t const pin)
 
 
 
-template <uint8_t pin>
+template <PinType pin>
 inline
-void digitalWrite(uint8_t const val)
+void digitalWrite(PinState const val)
 {
 	constexpr uint8_t const timer = digitalPinToTimer(PinType(pin));
 	constexpr auto port = digital_pin_to_Port_PS(pin);
@@ -214,12 +210,12 @@ void digitalWrite(uint8_t const val)
 		*out |= bit;
 	}
 }
-template <uint8_t pin, uint8_t val>
+template <PinType pin, PinState val>
 inline
 __attribute__((always_inline))
 void digitalWrite()
 {
-	constexpr auto const timer = digitalPinToTimer(PinType(pin));
+	constexpr auto const timer = digitalPinToTimer(pin);
 	constexpr auto port = digital_pin_to_Port_PS(pin);
 	constexpr auto bit = bitmask::digital_pin_to_BitMask_PS(pin);
 
@@ -241,9 +237,9 @@ void digitalWrite()
 
 // ***************** digitalRead
 
-template <uint8_t pin>
+template <PinType pin>
 inline
-int digitalRead()
+PinState digitalRead()
 {
 	constexpr auto timer = digitalPinToTimer(PinType(pin));
 	constexpr uint8_t bit = digitalPinToBitMask(pin);
@@ -259,27 +255,28 @@ int digitalRead()
 	return LOW;
 }
 inline
-int digitalRead(uint8_t const pin)
+PinState digitalRead(PinType const pin)
 {
-	auto const timer = digitalPinToTimer(PinType(pin));
-	uint8_t const bit = digitalPinToBitMask(pin);
 	PortType const port = digitalPinToPort(pin);
 
 	if (port == NO_PORT) return LOW;
 
 	// If the pin that support PWM output, we need to turn it off
 	// before getting a digital reading.
-	if (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff(PinType(pin));
+	auto const timer = digitalPinToTimer(pin);
+	if (timer != NOT_ON_TIMER) analog_pin_to_timer_turnoff(pin);
+
+	uint8_t const bit = digitalPinToBitMask(pin);
 
 	if (*portInputRegister(port) & bit) return HIGH;
 	return LOW;
 }
 // ************ analogRead() --- needs more work!
 namespace analog{
-inline uint8_t analog_reference = DEFAULT;
+inline AnalogInReferenceVoltageMode analog_reference = DEFAULT;
 
 inline
-void analogReference(uint8_t mode)
+void analogReference(AnalogInReferenceVoltageMode mode)
 {
 	// can't actually set the register here because the default setting
 	// will connect AVCC and the AREF pin, which would cause a short if
@@ -289,23 +286,23 @@ void analogReference(uint8_t mode)
 }
 inline
 __attribute__((always_inline))
-int analogRead(uint8_t pin)
+int analogRead(PinType pin)
 {
 	using ::analog::analog_reference;
 
 #if defined(analogPinToChannel)
 #if defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
+//	if (pin >= 18) pin -= 18; // allow for channel or pin numbers --> we map correctly in analogPinToChannel
 #endif
-	pin = analogPinToChannel(pin);
+	pin = PinType(analogPinToChannel(pin));
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-	if (pin >= 54) pin -= 54; // allow for channel or pin numbers
+	if (pin >= 54) pin = PinType(pin - 54); // allow for channel or pin numbers
 #elif defined(__AVR_ATmega32U4__)
-	if (pin >= 18) pin -= 18; // allow for channel or pin numbers
+	if (pin >= 18) pin = PinType(pin - 18); // allow for channel or pin numbers
 #elif defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
-	if (pin >= 24) pin -= 24; // allow for channel or pin numbers
+	if (pin >= 24) pin = PinType(pin - 24); // allow for channel or pin numbers
 #else
-	if (pin >= 14) pin -= 14; // allow for channel or pin numbers
+	if (pin >= 14) pin = PinType(pin - 14); // allow for channel or pin numbers
 #endif
 
 #if defined(ADCSRB) && defined(MUX5)
@@ -350,7 +347,7 @@ int analogRead(uint8_t pin)
 
 //******** analogWrite
 
-template<uint8_t pin>
+template<PinType pin>
 inline
 void analogWrite(int const val)
 {
@@ -376,7 +373,7 @@ void analogWrite(int const val)
 	}
 }
 inline
-void analogWrite(uint8_t const pin, int const val)
+void analogWrite(PinType const pin, int const val)
 {
 	// We need to make sure the PWM output is enabled for those pins
 	// that support it, as we turn it off when digitally reading or
@@ -386,22 +383,22 @@ void analogWrite(uint8_t const pin, int const val)
 	pinModeFixMode<OUTPUT>(pin);
 	if (val == 0)
 	{
-		digitalWrite(pin,LOW);
+		digitalWrite_LH<LOW>(pin);
 	}
 	else if (val == 255)
 	{
-		digitalWrite(pin,HIGH);
+		digitalWrite_LH<HIGH>(pin);
 	}
 	else
 	{
-		auto const timer = digital_pin_to_timer_PS(PinType(pin));
+		auto const timer = digital_pin_to_timer_PS(pin);
 		if (timer != NOT_ON_TIMER){
 			setPWMValue(timer,val);
 		} else { // not on a timer
 			if (val < 128) {
-				digitalWrite(pin,LOW);
+				digitalWrite_LH<LOW>(pin);
 			} else {
-				digitalWrite(pin,HIGH);
+				digitalWrite_LH<HIGH>(pin);
 			}
 
 		}

@@ -111,7 +111,7 @@ megaADKP.build.f_cpu=16000000L
 megaADKP.build.board=AVR_ADK
 megaADKP.build.core=arduino
 megaADKP.build.variant=mega
-megaADKP.build.extra_flags=-DUsePetersCpp17
+megaADKP.build.extra_flags=-DUsePetersCpp17 -fno-tree-switch-conversion
 
 ##############################################################
 

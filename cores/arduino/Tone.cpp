@@ -32,12 +32,13 @@ Version Modified By Date     Comments
 0008    S Kanemoto  12/06/22 Fixed for Leonardo by @maris_HY
 0009    J Reucker   15/04/10 Issue #292 Fixed problems with ATmega8 (thanks to Pete62)
 0010    jipp        15/04/13 added additional define check #2923
+xxxx    P Sommerlad 20/04/07 greatly simplified and adopted to inline wiring
 *************************************************/
 
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "Arduino.h"
-#include "pins_arduino.h" // PS superfluous in Arduino.h
+//#include "pins_arduino.h" // PS superfluous in Arduino.h
 
 // PS, hacky but change later...
 
@@ -153,36 +154,6 @@ long compute_toggle_count(unsigned long duration, unsigned int frequency) {
 	}
 }
 
-//uint8_t compute_ocr_and_prescalerbits_for_8bit_timer(uint32_t &ocr, unsigned int frequency, uint8_t prescalerbits, int8_t _timer) {
-//	ocr = F_CPU / frequency / 2 - 1;
-//	prescalerbits = 0b001; // ck/1: same for both timers
-//	if (ocr > 255) {
-//		ocr = F_CPU / frequency / 2 / 8 - 1;
-//		prescalerbits = 0b010; // ck/8: same for both timers
-//		if (_timer == 2 && ocr > 255) {
-//			ocr = F_CPU / frequency / 2 / 32 - 1;
-//			prescalerbits = 0b011;
-//		}
-//		if (ocr > 255) {
-//			ocr = F_CPU / frequency / 2 / 64 - 1;
-//			prescalerbits = _timer == 0 ? 0b011 : 0b100;
-//			if (_timer == 2 && ocr > 255) {
-//				ocr = F_CPU / frequency / 2 / 128 - 1;
-//				prescalerbits = 0b101;
-//			}
-//			if (ocr > 255) {
-//				ocr = F_CPU / frequency / 2 / 256 - 1;
-//				prescalerbits = _timer == 0 ? 0b100 : 0b110;
-//				if (ocr > 255) {
-//					// can't do any better than /1024
-//					ocr = F_CPU / frequency / 2 / 1024 - 1;
-//					prescalerbits = _timer == 0 ? 0b101 : 0b111;
-//				}
-//			}
-//		}
-//	}
-//	return prescalerbits;
-//}
 
 // frequency (in hertz) and duration (in milliseconds).
 
@@ -281,19 +252,6 @@ void noTone(uint8_t pin)
 		disableTimer();
 	    *tone_pin_port &= ~tone_pin_mask;  // keep pin low after stop
 	}
-//  int8_t _timer = -1;
-//
-//  for (int i = 0; i < AVAILABLE_TONE_PINS; i++) {
-//    if (tone_pins[i] == _pin) {
-//      _timer = pgm_read_byte(tone_pin_to_timer_PGM + i);
-//      tone_pins[i] = 255;
-//      break;
-//    }
-//  }
-//
-//  disableTimer(_timer);
-//
-//  digitalWrite(_pin, 0);
 }
 
 
