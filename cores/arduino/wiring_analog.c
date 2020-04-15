@@ -25,14 +25,14 @@
 #include "wiring_private.h"
 #include "pins_arduino.h"
 
-uint8_t analog_reference = DEFAULT;
+uint8_t analog_reference_ORI = DEFAULT;
 
 void analogReference_ORI(uint8_t mode)
 {
 	// can't actually set the register here because the default setting
 	// will connect AVCC and the AREF pin, which would cause a short if
 	// there's something connected to AREF.
-	analog_reference = mode;
+	analog_reference_ORI = mode;
 }
 int analogRead_ORI(uint8_t pin)
 {
@@ -64,9 +64,9 @@ int analogRead_ORI(uint8_t pin)
 	// to 0 (the default).
 #if defined(ADMUX)
 #if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
-	ADMUX = (analog_reference << 4) | (pin & 0x07);
+	ADMUX = (analog_reference_ORI << 4) | (pin & 0x07);
 #else
-	ADMUX = (analog_reference << 6) | (pin & 0x07);
+	ADMUX = (analog_reference_ORI << 6) | (pin & 0x07);
 #endif
 #endif
 
@@ -100,9 +100,8 @@ int analogRead_ORI(uint8_t pin)
 // hardware support.  These are defined in the appropriate
 // pins_*.c file.  For the rest of the pins, we default
 // to digital output.
-#ifdef UsePetersCpp17
 void analogWrite_ORI(PinType pin, int val)
-#else
+#if 0
 void analogWrite(uint8_t pin, int val)
 #endif
 {

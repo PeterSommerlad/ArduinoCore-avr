@@ -27,9 +27,8 @@
 #include "pins_arduino.h"
 
 
-#ifdef UsePetersCpp17
 void pinMode_ORI(uint8_t const pin, uint8_t const mode)
-#else
+#if 0
 void pinMode(uint8_t const pin, uint8_t const mode)
 #endif
 {
@@ -41,7 +40,6 @@ void pinMode(uint8_t const pin, uint8_t const mode)
 
 	volatile uint8_t *reg = portModeRegister(port);
 	volatile uint8_t *out = portOutputRegister(port);
-#ifdef UsePetersCpp17
 	if (mode == INPUT) {
 		SafeStatusRegisterAndClearInterrupt safe;
 		*reg &= ~bit;
@@ -54,7 +52,7 @@ void pinMode(uint8_t const pin, uint8_t const mode)
 		SafeStatusRegisterAndClearInterrupt safe;
 		*reg |= bit;
 	}
-#else
+#if 0
 	if (mode == INPUT) { 
 		uint8_t oldSREG = SREG;
                 cli();
@@ -152,11 +150,11 @@ static void turnOffPWM(uint8_t timer)
 		#endif
 	}
 }
-#ifdef UsePetersCpp17
+
 void digitalWrite_ORI(uint8_t pin, uint8_t val)
 {
 	auto const timer = digitalPinToTimer(PinType(pin));
-#else
+#if 0
 void digitalWrite(uint8_t pin, uint8_t val)
 {
 	uint8_t const timer = digitalPinToTimer(pin);
@@ -172,9 +170,8 @@ void digitalWrite(uint8_t pin, uint8_t val)
 
 	volatile uint8_t * const out = portOutputRegister(port);
 
-#ifdef UsePetersCpp17
 	SafeStatusRegisterAndClearInterrupt safe { };
-#else
+#if 0
 	uint8_t oldSREG = SREG;
 	cli();
 #endif
@@ -184,16 +181,15 @@ void digitalWrite(uint8_t pin, uint8_t val)
 		*out |= bit;
 	}
 
-#ifndef UsePetersCpp17
+#if 0
 	SREG = oldSREG;
 #endif
 }
 
-#ifdef UsePetersCpp17
 int digitalRead_ORI(PinType pin)
 {
 	auto const timer = digitalPinToTimer(pin);
-#else
+#if 0
 int digitalRead(uint8_t pin)
 {
 	uint8_t const timer = digitalPinToTimer(pin);

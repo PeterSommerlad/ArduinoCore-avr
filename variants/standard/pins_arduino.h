@@ -24,7 +24,6 @@
 #define Pins_Arduino_h
 
 #include <avr/interrupt.h>
-//#include <avr/iom328p.h>  // just for better parsing in Cevelop
 
 #define NUM_DIGITAL_PINS            20
 #define NUM_ANALOG_INPUTS           6
